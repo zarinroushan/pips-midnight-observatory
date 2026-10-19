@@ -2,7 +2,7 @@
   const canvas = document.querySelector('#heroPipCanvas');
   const status = document.querySelector('#pipLoadingStatus');
   const button = document.querySelector('#pipButton');
-  const modelUrl = new URL('assets/animated_pip.glb', document.baseURI).href;
+  const modelUrl = 'https://huggingface.co/zarinr/dear-pip-assets/resolve/main/animated_pip.glb';
   const threeModuleUrl = 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
   const gltfLoaderUrl = 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js';
   const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');

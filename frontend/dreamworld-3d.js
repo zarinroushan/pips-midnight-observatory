@@ -6,7 +6,7 @@ const worldLabel = document.querySelector('#dreamworldWorldLabel');
 const destinationButtons = [...document.querySelectorAll('.dreamworld-location')];
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const gltfLoaderUrl = 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js';
-const pipModelUrl = new URL('assets/animated_pip.glb', document.baseURI).href;
+const pipModelUrl = 'https://huggingface.co/zarinr/dear-pip-assets/resolve/main/animated_pip.glb';
 let requestedDayMix = document.documentElement.dataset.mood === 'dawn' ? 1 : 0;
 let updateMoodTransition = null;
 const themeObserver = new MutationObserver(() => {
