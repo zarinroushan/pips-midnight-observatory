@@ -1,0 +1,169 @@
+# Dear Pip API
+
+## Local environment
+
+The Flask app reads `DATABASE_URL` from the project-root `.env` through
+`python-dotenv`. Keep credentials in that ignored file locally and in Render
+environment settings in production. Never place database credentials in the
+frontend or commit them.
+
+Set `CORS_ALLOWED_ORIGINS` to a comma-separated list of exact frontend origins.
+For local Live Server, the default allows `http://127.0.0.1:5500` and
+`http://localhost:5500`. For Render, set the deployed frontend origin explicitly.
+The Dream Garden API base can be set in its `dear-pip-api-base` meta element;
+blank uses localhost only when the page itself is served from localhost, and
+otherwise uses the same origin.
+
+Run the Flask API from the `backend/` directory in PowerShell:
+
+```powershell
+Set-Location .\backend
+..\.venv\Scripts\Activate.ps1
+python .\app.py
+```
+
+Install dependencies from that same directory if needed:
+
+```powershell
+python -m pip install -r .\requirements.txt
+```
+
+Serve `frontend/` using VS Code Live Server over HTTP, not `file://`. The Garden
+uses an opaque random UUID saved in browser localStorage as a bearer-like key
+for its server state. It is not authentication: someone who obtains that
+identifier can read and change the associated Garden. No fingerprinting or
+personal profile is used.
+
+## Database migrations
+
+Migrations are additive and safe to re-run; they do not drop or truncate data.
+Migration `001_garden_state.sql` creates Garden state storage and creates the guestbook table if absent.
+index. Migration `002_atlas.sql` creates Dream Atlas skills, evidence, project,
+and project-skill relationship tables, then adds the verified Dear Pip project
+record without a repository URL. It leaves existing project details unchanged.
+If `guestbook_entries` already exists, ensure it has `id`, `display_name`,
+`dream_message`, `status`, and `created_at` columns before applying migration 001.
+Migration `003_visitor_progress.sql` adds revisioned progress for home, Atlas,
+bedtime reading, and Lullaby Lab notes.
+
+Set `DATABASE_URL` privately in the current PowerShell session, then from the
+repository root run:
+
+```powershell
+& 'C:\Program Files\PostgreSQL\18\bin\psql.exe' "$env:DATABASE_URL" -v ON_ERROR_STOP=1 -f .\backend\migrations\001_garden_state.sql
+& 'C:\Program Files\PostgreSQL\18\bin\psql.exe' "$env:DATABASE_URL" -v ON_ERROR_STOP=1 -f .\backend\migrations\002_atlas.sql
+& 'C:\Program Files\PostgreSQL\18\bin\psql.exe' "$env:DATABASE_URL" -v ON_ERROR_STOP=1 -f .\backend\migrations\003_visitor_progress.sql
+```
+
+Do not paste credentials into source files or share terminal output that includes
+the connection URL. On Render, use the PostgreSQL connection URL from the
+attached database and apply the same migration once before enabling Garden sync.
+
+## Render web service
+
+Create a Python web service with `backend` as its root directory. Use
+`pip install -r requirements.txt` as the build command and
+`waitress-serve --listen=0.0.0.0:$PORT app:app` as the recommended start command.
+The `python app.py` entry point also binds to `0.0.0.0` and the supplied `PORT`
+when that variable is present, while keeping local development on
+`127.0.0.1:5000`. Configure
+`DATABASE_URL` with the Render PostgreSQL URL and set `CORS_ALLOWED_ORIGINS` to
+the exact deployed frontend origin when the frontend is hosted separately.
+Render supplies `PORT`; the Flask development server is only for local use.
+
+If the frontend and API have different origins, set the
+`dear-pip-api-base` meta element in `frontend/dream-garden.html` to the deployed
+API base URL. Do not put database credentials in that element or any frontend
+file.
+
+## API
+
+- `GET /api/health` checks the Flask process.
+- `GET /api/ready` distinguishes unavailable PostgreSQL from missing required
+  schema and reports only readiness/table names, never connection settings.
+- `GET /api/garden/state/<visitor_uuid>` loads state or returns `state: null`,
+  `revision: 0` for a new visitor.
+- `PUT /api/garden/state/<visitor_uuid>` creates or updates version-1 Garden
+  state with an optimistic `revision`; a stale revision returns HTTP 409 and
+  the current state for a safe merge.
+- `GET /api/guestbook?limit=20` returns approved entries only (limit 1–100).
+- `POST /api/guestbook` accepts `display_name` (optional, up to 60 characters)
+  and `dream_message` (required, up to 1000 characters); entries remain pending.
+- `GET /api/guestbook/pending` and
+  `PATCH /api/guestbook/<id>/moderation` require the owner token; moderation
+  changes only a pending record to `approved` or `rejected`.
+- `GET /api/skills` and `GET /api/projects` return public Atlas records;
+  `GET /api/skills/<id>` and `GET /api/projects/<id>` return individual records.
+- `POST /api/atlas/owner/unlock`, `POST /api/atlas/scan/preview`,
+  `POST /api/atlas/scan/import`, `POST /api/skills`, and `POST /api/projects`
+  require `X-Admin-Token` and the private `ATLAS_ADMIN_TOKEN` setting. Owner
+  management remains disabled until a token of at least 32 characters is set.
+
+The repository preview scans only the directory containing this installation.
+It accepts no browser path, executes no source, and skips `.env`, hidden files,
+credential and private-key files, dependency trees, generated output, and binary
+assets. Results contain technology names and relative evidence references, not
+source excerpts. Import rescans and accepts only selected findings still
+present in the configured repository. Detection records repository presence;
+it does not assign proficiency.
+
+For local use, add a randomly generated secret of at least 32 characters to the
+ignored project-root `.env` as `ATLAS_ADMIN_TOKEN=...`. Keep it private and use
+HTTPS in production. The Dream Atlas sends it only in an API request header,
+keeps it in memory for the current tab, and never writes it to browser storage.
+Set `dear-pip-api-base` in `frontend/dream-atlas.html` for a separately hosted
+API and allow the frontend's exact origin in `CORS_ALLOWED_ORIGINS`.
+
+Rate limiting is in-memory per
+application process, so production deployments with multiple workers/instances
+should add shared rate limiting before broad public launch.
+
+If merging local and server Garden progress would require more than the five
+available plots, the current device's local Garden is retained and the server
+copy is left unchanged rather than discarding either side. The two versions
+will need to be reconciled before their progress can be combined.
+
+## Tests
+
+From the repository root:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s backend\tests -v
+```
+
+The default tests mock Psycopg calls and do not connect to the configured
+database. An explicitly opt-in integration test exercises PostgreSQL-backed
+Garden persistence and guestbook moderation against a separate test database.
+Set `DEAR_PIP_TEST_DATABASE_URL` only to an isolated database with migrations
+001–003 applied, then run:
+
+```powershell
+$env:DEAR_PIP_TEST_DATABASE_URL = '<isolated test database URL>'
+..\.venv\Scripts\python.exe -B -m unittest backend.tests.test_postgres_integration -v
+Remove-Item Env:DEAR_PIP_TEST_DATABASE_URL
+```
+
+The integration test creates temporary rows with unique identifiers and deletes
+only those rows during cleanup. Do not point it at production or a database
+whose data must remain untouched.
+
+## Visitor progress and story context
+
+The visitor UUID is the opaque UUID already used by Garden state. It is stored
+in browser localStorage and is not an authentication credential. `GET` and
+`PUT /api/progress/<visitor_uuid>/<feature>` support `home`, `atlas`,
+`bedtime`, and `lullaby`; writes use revisions and return HTTP 409 on stale
+updates. Local values remain as a fallback/cache. `GET
+/api/stories/context/<visitor_uuid>` returns verified project/skill names and
+saved milestones; story prose remains authored fiction.
+
+## Which pages use the API
+
+The Dream Garden, Dream Atlas, and visitor progress features use the Flask API.
+The static Workshop shows only verified project information. No payment or
+external AI story provider is configured in this repository.
+
+The guestbook has no visitor-facing moderation interface. An authorized
+operator can review pending entries through the protected API. Its current rate
+limit is in-memory per application process, not shared across Render workers or
+instances.

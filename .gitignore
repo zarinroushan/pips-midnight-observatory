@@ -1,0 +1,10 @@
+.env
+.env.*
+!.env.example
+.venv/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+# Large 3D assets hosted separately
+/frontend/assets/animated_pip.glb

@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#17152c">
+  <meta name="description" content="Read Pip and the Missing Star, a cozy branching bedtime story.">
+  <meta name="dear-pip-api-base" content="">
+  <title>Bedtime Stories — Dear Pip</title>
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/@rive-app/canvas@2.30.3" defer></script>
+  <script src="sounds.js" defer></script>
+  <script src="visitor-progress.js" defer></script>
+  <script src="bedtime-stories.js" defer></script>
+</head>
+<body class="bedtime-page">
+  <a class="bedtime-skip" href="#bedtimeStory">Skip to the story</a>
+
+  <header class="bedtime-header">
+    <a class="bedtime-brand" href="index.html" aria-label="Dear Pip home">
+      <img class="brand-mascot__image" src="assets/pip.png" alt="" aria-hidden="true"> DEAR PIP <span class="bedtime-brand__divider">/</span> BEDTIME STORIES
+    </a>
+    <button class="mood-toggle page-theme-toggle" type="button" data-theme-toggle aria-pressed="false" aria-label="Switch to light theme"><span data-theme-icon aria-hidden="true">☾</span> <span data-theme-label>Dark mode</span></button>
+    <a class="bedtime-back" href="dreamworld.html"><span aria-hidden="true">←</span> Back to Dreamworld</a>
+  </header>
+
+  <main class="bedtime-main">
+    <div class="bedtime-intro">
+      <p class="bedtime-eyebrow">A STORY FROM THE MIDNIGHT NURSERY</p>
+      <h1>Pip and the <em>Missing Star</em></h1>
+      <p>A little story about finding where a lost light belongs.</p>
+    </div>
+
+    <div class="bedtime-layout">
+      <section class="bedtime-book" id="bedtimeStory" aria-labelledby="bedtimeSceneTitle">
+        <div class="bedtime-book__moon" aria-hidden="true"></div>
+        <div class="bedtime-book__ornament bedtime-book__ornament--top" aria-hidden="true">✧ &nbsp; ✦ &nbsp; ✧</div>
+        <div class="bedtime-story-scene" id="bedtimeScene" aria-live="polite" aria-atomic="true">
+          <p class="bedtime-scene-label" id="bedtimeSceneLabel">CHAPTER ONE · A TINY TWINKLE</p>
+          <h2 id="bedtimeSceneTitle">The little light in the grass</h2>
+          <p class="bedtime-story-copy" id="bedtimeStoryCopy"></p>
+          <div class="bedtime-choices" id="bedtimeChoices"></div>
+        </div>
+        <div class="bedtime-ending-actions" id="bedtimeEndingActions">
+          <button class="bedtime-restart" id="bedtimeRestart" type="button">Restart this story <span aria-hidden="true">↻</span></button>
+        </div>
+        <div class="bedtime-book__ornament bedtime-book__ornament--bottom" aria-hidden="true">✦ &nbsp; REST YOUR EYES &nbsp; ✦</div>
+      </section>
+
+      <aside class="bedtime-companion" aria-label="Pip is here with you">
+        <div class="bedtime-companion__halo" aria-hidden="true"></div>
+        <div class="bedtime-avatar">
+          <div class="pip-character">
+            <canvas id="pipCanvas" aria-label="Pip, your little dream engineer" role="img"></canvas>
+            <div class="pip-eye-overlay" aria-hidden="true">
+              <span class="pip-eye pip-eye--left"><span class="pip-pupil"><span class="pip-glint"></span></span></span>
+              <span class="pip-eye pip-eye--right"><span class="pip-pupil"><span class="pip-glint"></span></span></span>
+            </div>
+          </div>
+          <button class="pip-hitarea" id="pipButton" type="button" aria-label="Say hello to Pip"></button>
+        </div>
+        <p class="bedtime-companion__caption">Pip is listening <span aria-hidden="true">✦</span></p>
+        <div class="bedtime-companion__quote" aria-hidden="true">“Every little light<br>belongs somewhere.”</div>
+      </aside>
+    </div>
+    <section class="bedtime-real-notes" aria-labelledby="bedtimeRealNotesTitle" aria-live="polite">
+      <p class="bedtime-eyebrow">REAL DETAILS FROM THIS NURSERY</p>
+      <h2 id="bedtimeRealNotesTitle">True little things</h2>
+      <div id="bedtimeProjectNotes"><p>Loading verified project notes…</p></div>
+      <ul id="bedtimeAchievementNotes"></ul>
+    </section>
+    <p class="bedtime-fiction-note">Pip and this story are fictional; this page is a little interactive tale, not a creator biography.</p>
+  </main>
+
+  <footer class="bedtime-footer">
+    <span>ONE LAST LITTLE DREAM</span>
+    <nav aria-label="Explore Dear Pip">
+      <a href="index.html">Home</a><a href="dreamworld.html">Dreamworld</a><a href="workshop.html">Workshop</a><a href="bedtime-stories.html" aria-current="page">Bedtime Stories</a>
+      <a href="dream-atlas.html">Dream Atlas</a><a href="dream-garden.html">Dream Garden</a><a href="lullaby-lab.html">Lullaby Lab</a>
+    </nav>
+  </footer>
+  <div class="bedtime-toast" id="bedtimeToast" role="status" aria-live="polite"></div>
+</body>
+</html>

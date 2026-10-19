@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#17152c">
+  <meta name="description" content="Visit Pip, Junior Dream Engineer at the Midnight Nursery.">
+  <meta name="dear-pip-api-base" content="">
+  <title>Dear Pip — Midnight Nursery</title>
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="style.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js"
+      }
+    }
+  </script>
+  <script src="sounds.js" defer></script>
+  <script src="visitor-progress.js" defer></script>
+  <script src="home-pip-3d.js" defer></script>
+  <script src="script.js" defer></script>
+</head>
+<body class="home-page">
+  <main class="scene" id="scene">
+
+    
+    <!-- Cinematic curtain intro -->
+    <div class="curtain-intro" id="curtainIntro" aria-label="Welcome to the Midnight Nursery">
+        <div class="curtain-intro__glow"></div>
+
+        <div class="curtain curtain--left">
+            <div class="curtain__folds"></div>
+        </div>
+
+        <div class="curtain curtain--right">
+            <div class="curtain__folds"></div>
+        </div>
+
+        <div class="curtain-intro__title">
+            <span>THE MIDNIGHT NURSERY</span>
+            <p>A little dream is waiting...</p>
+            <img class="curtain-intro__pip" src="assets/pip-curtain.png" alt="Pip peeking beneath the nursery curtains">
+        </div>
+    </div>
+
+
+    <div class="scene__background" aria-hidden="true"></div>
+
+    <div class="scenery-motion" aria-hidden="true">
+        <span class="drifting-cloud cloud-one"></span>
+        <span class="drifting-cloud cloud-two"></span>
+
+        <span class="shooting-star shooting-star-one"></span>
+        <span class="shooting-star shooting-star-two"></span>
+
+        <span class="hanging-star hanging-star-one">✦</span>
+        <span class="hanging-star hanging-star-two">✧</span>
+
+        <span class="floating-sparkle sparkle-one">✦</span>
+        <span class="floating-sparkle sparkle-two">✧</span>
+        <span class="floating-sparkle sparkle-three">✦</span>
+    </div>
+    <div class="daytime-decorations">
+        <button class="day-butterfly day-butterfly--one" type="button" data-butterfly="0" aria-label="Collect a little butterfly"><i></i><i></i><b></b></button>
+        <span class="day-butterfly day-butterfly--two" aria-hidden="true"><i></i><i></i><b></b></span>
+        <button class="day-butterfly day-butterfly--three" type="button" data-butterfly="1" aria-label="Collect a little butterfly"><i></i><i></i><b></b></button>
+        <span class="drifting-petal drifting-petal--one" aria-hidden="true"></span>
+        <span class="drifting-petal drifting-petal--two" aria-hidden="true"></span>
+        <span class="drifting-petal drifting-petal--three" aria-hidden="true"></span>
+        <span class="day-sparkle day-sparkle--one" aria-hidden="true">✧</span>
+        <span class="day-sparkle day-sparkle--two" aria-hidden="true">✦</span>
+        <span class="day-sparkle day-sparkle--three" aria-hidden="true">✧</span>
+    </div>
+    <div class="scene__veil" aria-hidden="true"></div>
+    <div class="grain" aria-hidden="true"></div>
+
+    <header class="topbar">
+
+    <div class="wordmark">
+      <img class="brand-mascot__image" src="assets/pip.png" alt="" aria-hidden="true">
+
+      <a
+        class="wordmark__title"
+        href="index.html"
+        aria-label="Midnight Nursery home"
+      >MIDNIGHT NURSERY</a>
+    </div>
+
+      <div class="topbar__right"><span class="status"><span></span> DREAMS IN PROGRESS</span><button class="mood-toggle" id="moodToggle" data-theme-toggle type="button" aria-pressed="false" aria-label="Switch to light theme"><span data-theme-icon aria-hidden="true">☾</span> <span id="moodLabel" data-theme-label>Dark mode</span></button><button class="sound-toggle" id="soundToggle" type="button" aria-pressed="false" aria-label="Turn sound effects on" title="Toggle sound effects">♫ <span>Sound off</span></button></div>
+    </header>
+
+    <section class="hero" id="home" aria-labelledby="heroTitle">
+      <div class="hero__copy">
+        <p class="eyebrow"><span class="eyebrow__line"></span> JUNIOR DREAM ENGINEER <span class="eyebrow__line"></span></p>
+        <h1 id="heroTitle">Hi, I'm <em>Pip!</em></h1>
+        <p class="hero__intro">Welcome, dreamer. I'm so glad you're here.<br>Come explore my tiny corner of the universe.</p>
+        <button class="primary-cta" id="exploreButton" type="button">Explore my world <span aria-hidden="true">✨</span></button>
+        <p class="microcopy">Say hello to Pip ✨</p>
+      </div>
+
+      <div class="pip-stage" id="pipStage">
+        <div class="pip-character" id="pipCharacter">
+          <canvas id="heroPipCanvas" aria-hidden="true"></canvas>
+          <span class="pip-loading-status" id="pipLoadingStatus" role="status" aria-live="polite">Calling Pip in from the clouds…</span>
+        </div>
+        <button class="pip-hitarea" id="pipButton" type="button" aria-label="Pip, press to jump" aria-describedby="pipLoadingStatus" aria-busy="true"></button>
+        <p class="pip-caption" aria-hidden="true"><span>✦</span> SAY HELLO TO PIP</p>
+      </div>
+
+
+      <div class="side-note side-note--left"><span class="side-note__rule"></span><span>EST. AFTER<br>BEDTIME</span></div>
+      <div class="side-note side-note--right"><span>TONIGHT'S FORECAST</span><strong>100% chance<br>of wonder</strong></div>
+    </section>
+
+    <div class="star-field" id="starField" aria-label="Collect the stars"></div>
+    <div class="bottom-bar"><span class="collection"><span class="collection__icon" id="collectionIcon" aria-hidden="true">✦</span><span id="collectionLabel">STARS COLLECTED</span><strong id="starCount">0</strong><span class="collection__slash" id="collectionLimit">/ 5</span></span><span class="bottom-hint" id="bottomHint">TAP A STAR TO COLLECT IT <span aria-hidden="true">↗</span></span></div>
+
+    <section class="discovery" id="discovery" aria-live="polite" aria-hidden="true">
+      <button class="discovery__close" id="closeDiscovery" type="button" aria-label="Close discovery">×</button>
+      <p class="eyebrow" id="discoveryEyebrow">A LITTLE DISCOVERY</p><h2 id="discoveryTitle">A dream found you.</h2><p id="discoveryText">Every star has a story. Keep exploring.</p>
+      <button class="discovery__next" id="discoveryNext" type="button">Keep exploring <span>→</span></button>
+    </section>
+
+    <section class="journal" id="journal" aria-hidden="true">
+      <button class="journal__close" id="closeJournal" type="button" aria-label="Close journal">×</button>
+      <p class="eyebrow">FROM PIP'S JOURNAL</p><h2>Little things I've made</h2><p class="journal__intro">A tiny collection of dream experiments from the Midnight Nursery.</p>
+      <div class="journal__grid">
+        <article class="journal-card"><span class="journal-card__icon">☾</span><p>01 / SOUND</p><h3>Lullaby Lab</h3><span>Turning sleepy thoughts into tiny songs.</span></article>
+        <article class="journal-card"><span class="journal-card__icon">✧</span><p>02 / LIGHT</p><h3>Dream Lanterns</h3><span>Little lights for the in-between hours.</span></article>
+        <article class="journal-card"><span class="journal-card__icon">✦</span><p>03 / STORIES</p><h3>Cloud Post</h3><span>Delivering stories to faraway pillows.</span></article>
+      </div>
+      <p class="journal__footnote">Pip's journal is fictional. <a href="workshop.html">See the real project notes in Pip's Workshop →</a></p>
+    </section>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <div class="portal-transition" id="portalTransition" aria-hidden="true">
+      <span class="portal-transition__moon" aria-hidden="true"></span>
+      <span class="portal-transition__star portal-transition__star--one" aria-hidden="true">✦</span>
+      <span class="portal-transition__star portal-transition__star--two" aria-hidden="true">✧</span>
+      <span class="portal-transition__star portal-transition__star--three" aria-hidden="true">✦</span>
+      <span class="portal-transition__star portal-transition__star--four" aria-hidden="true">✧</span>
+      <span class="portal-transition__star portal-transition__star--five" aria-hidden="true">✦</span>
+      <p>Following the little lights…</p>
+    </div>
+  </main>
+</body>
+</html>

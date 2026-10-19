@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#17152c">
+  <meta name="description" content="Chart tiny dreams among the stars with Pip in the Dream Atlas.">
+  <meta name="dear-pip-api-base" content="">
+  <title>The Dream Atlas — Dear Pip</title>
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/@rive-app/canvas@2.30.3" defer></script>
+  <script src="sounds.js" defer></script>
+  <script src="visitor-progress.js" defer></script>
+  <script src="dream-atlas.js" defer></script>
+  <script src="dream-atlas-data.js" defer></script>
+</head>
+<body class="atlas-page">
+  <a class="atlas-skip" href="#atlasChart">Skip to the star chart</a>
+
+  <header class="atlas-header">
+    <a class="atlas-brand" href="index.html" aria-label="Dear Pip home">
+      <img class="brand-mascot__image" src="assets/pip.png" alt="" aria-hidden="true"> DEAR PIP <span class="atlas-brand__divider">/</span> THE DREAM ATLAS
+    </a>
+    <button class="mood-toggle page-theme-toggle" type="button" data-theme-toggle aria-pressed="false" aria-label="Switch to light theme"><span data-theme-icon aria-hidden="true">☾</span> <span data-theme-label>Dark mode</span></button>
+    <a class="atlas-back" href="dreamworld.html"><span aria-hidden="true">←</span> Back to Dreamworld</a>
+  </header>
+
+  <main class="atlas-main">
+    <section class="atlas-intro" aria-labelledby="atlasTitle">
+      <p class="atlas-eyebrow">PIP'S CELESTIAL FIELD NOTES</p>
+      <h1 id="atlasTitle">The <em>Dream Atlas</em></h1>
+      <p>Follow the little lights. Every star has a story waiting to be found.</p>
+    </section>
+
+    <div class="atlas-layout">
+      <section class="atlas-chart-card" id="atlasChart" aria-labelledby="atlasChartTitle">
+        <div class="atlas-chart-heading">
+          <div>
+            <p class="atlas-eyebrow">CHART 01 · THE NIGHT SKY</p>
+            <h2 id="atlasChartTitle">A map of faraway dreams</h2>
+          </div>
+          <p class="atlas-discovery-count" aria-live="polite"><span id="atlasCount">0</span><span> / 5<br>DISCOVERED</span></p>
+        </div>
+
+        <div class="atlas-star-chart" role="group" aria-label="Select a celestial object on the star chart">
+          <svg class="atlas-chart-art" viewBox="0 0 1000 620" aria-hidden="true" focusable="false">
+            <defs>
+              <radialGradient id="atlas-sky" cx="50%" cy="44%" r="75%">
+                <stop stop-color="#30294f"/>
+                <stop offset=".64" stop-color="#1e1d3d"/>
+                <stop offset="1" stop-color="#12162e"/>
+              </radialGradient>
+              <linearGradient id="atlas-line" x1="0" y1="0" x2="1" y2="1">
+                <stop stop-color="#ffe8a6"/>
+                <stop offset="1" stop-color="#e9aeca"/>
+              </linearGradient>
+              <filter id="atlas-glow" x="-100%" y="-100%" width="300%" height="300%">
+                <feGaussianBlur stdDeviation="5" result="blur"/>
+                <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+              <pattern id="atlas-grain" width="90" height="90" patternUnits="userSpaceOnUse">
+                <circle cx="12" cy="22" r="1.5" fill="#fff0c2" opacity=".58"/>
+                <circle cx="65" cy="63" r="1" fill="#f3bdd0" opacity=".46"/>
+                <circle cx="42" cy="8" r="1" fill="#fff0c2" opacity=".38"/>
+              </pattern>
+            </defs>
+            <rect width="1000" height="620" rx="28" fill="url(#atlas-sky)"/>
+            <rect width="1000" height="620" rx="28" fill="url(#atlas-grain)" opacity=".72"/>
+            <path class="atlas-chart-orbit" d="M90 337C150 114 405 72 600 121s330 198 269 339-302 142-469 86S55 475 90 337Z" fill="none" stroke="#a998c9" stroke-opacity=".17" stroke-width="1.5"/>
+            <path class="atlas-chart-orbit" d="M137 340C213 189 413 157 591 195s258 137 221 226-225 107-367 65-350-32-308-146Z" fill="none" stroke="#a998c9" stroke-opacity=".12" stroke-width="1.5"/>
+            <g fill="#fff1c9" opacity=".78">
+              <circle cx="113" cy="132" r="2"/><circle cx="294" cy="72" r="2"/><circle cx="472" cy="117" r="1.7"/>
+              <circle cx="737" cy="79" r="2"/><circle cx="901" cy="177" r="2"/><circle cx="857" cy="513" r="2"/>
+              <circle cx="671" cy="557" r="1.8"/><circle cx="363" cy="534" r="2"/><circle cx="159" cy="461" r="1.8"/>
+              <circle cx="55" cy="276" r="1.7"/><circle cx="547" cy="73" r="1.6"/><circle cx="947" cy="371" r="1.7"/>
+            </g>
+            <g class="atlas-constellation-lines" fill="none" stroke="url(#atlas-line)" stroke-width="2.4" stroke-linecap="round" filter="url(#atlas-glow)">
+              <path d="M160 199 226 160 296 184 322 254 270 303"/>
+              <path d="M457 194 510 142 567 172 608 245 560 287 493 266Z"/>
+              <path d="M739 207 790 165 835 212 809 270 751 263Z"/>
+              <path d="M262 431 323 385 381 423 360 488 303 503Z"/>
+              <path d="M636 427 690 381 752 405 777 469 714 504 657 480Z"/>
+            </g>
+            <g fill="#ffe8a6" filter="url(#atlas-glow)">
+              <circle cx="160" cy="199" r="4"/><circle cx="226" cy="160" r="4"/><circle cx="296" cy="184" r="4"/><circle cx="322" cy="254" r="4"/><circle cx="270" cy="303" r="4"/>
+              <circle cx="457" cy="194" r="4"/><circle cx="510" cy="142" r="4"/><circle cx="567" cy="172" r="4"/><circle cx="608" cy="245" r="4"/><circle cx="560" cy="287" r="4"/><circle cx="493" cy="266" r="4"/>
+              <circle cx="739" cy="207" r="4"/><circle cx="790" cy="165" r="4"/><circle cx="835" cy="212" r="4"/><circle cx="809" cy="270" r="4"/><circle cx="751" cy="263" r="4"/>
+              <circle cx="262" cy="431" r="4"/><circle cx="323" cy="385" r="4"/><circle cx="381" cy="423" r="4"/><circle cx="360" cy="488" r="4"/><circle cx="303" cy="503" r="4"/>
+              <circle cx="636" cy="427" r="4"/><circle cx="690" cy="381" r="4"/><circle cx="752" cy="405" r="4"/><circle cx="777" cy="469" r="4"/><circle cx="714" cy="504" r="4"/><circle cx="657" cy="480" r="4"/>
+            </g>
+            <g class="atlas-chart-crosses" stroke="#f3bdd0" stroke-width="1.5" opacity=".8">
+              <path d="M408 319v18m-9-9h18"/><path d="M679 110v16m-8-8h16"/><path d="M120 394v16m-8-8h16"/>
+              <path d="M882 331v18m-9-9h18"/><path d="M427 483v14m-7-7h14"/>
+            </g>
+            <circle cx="870" cy="115" r="50" fill="#f4cf78" opacity=".08"/>
+            <circle cx="870" cy="115" r="31" fill="#f5e8c2" opacity=".9"/>
+            <circle cx="884" cy="103" r="29" fill="#24203f"/>
+            <text x="84" y="576" fill="#d8cde6" opacity=".72" font-family="monospace" font-size="12" letter-spacing="3">NIGHT SKY · DREAM SECTOR 07</text>
+          </svg>
+
+          <button class="atlas-object atlas-object--lantern" type="button" data-object="lantern" aria-pressed="false" aria-label="Select The Lantern Fox constellation">
+            <span class="atlas-object__star" aria-hidden="true">✦</span><span class="atlas-object__label">Lantern Fox</span>
+          </button>
+          <button class="atlas-object atlas-object--sail" type="button" data-object="sail" aria-pressed="false" aria-label="Select The Moon-Sail constellation">
+            <span class="atlas-object__star" aria-hidden="true">✦</span><span class="atlas-object__label">Moon-Sail</span>
+          </button>
+          <button class="atlas-object atlas-object--whale" type="button" data-object="whale" aria-pressed="false" aria-label="Select The Cloud Whale constellation">
+            <span class="atlas-object__star" aria-hidden="true">✦</span><span class="atlas-object__label">Cloud Whale</span>
+          </button>
+          <button class="atlas-object atlas-object--garden" type="button" data-object="garden" aria-pressed="false" aria-label="Select The Dreaming Garden constellation">
+            <span class="atlas-object__star" aria-hidden="true">✦</span><span class="atlas-object__label">Dream Garden</span>
+          </button>
+          <button class="atlas-object atlas-object--bell" type="button" data-object="bell" aria-pressed="false" aria-label="Select The Pillow Bell constellation">
+            <span class="atlas-object__star" aria-hidden="true">✦</span><span class="atlas-object__label">Pillow Bell</span>
+          </button>
+        </div>
+        <p class="atlas-chart-hint">Choose a glowing constellation to read its field note.</p>
+      </section>
+
+      <aside class="atlas-side">
+        <section class="atlas-note" id="atlasNote" aria-live="polite" aria-atomic="true" aria-labelledby="atlasObjectName">
+          <p class="atlas-eyebrow">A NOTE FROM PIP</p>
+          <h2 id="atlasObjectName">Choose a constellation</h2>
+          <p id="atlasDescription">The sky is full of small wonders. Select a star pattern to open its page in Pip's atlas.</p>
+          <p class="atlas-discovery" id="atlasDiscovery">Every pattern holds a little discovery.</p>
+          <button class="atlas-discover" id="atlasDiscover" type="button" disabled>Discover this light</button>
+          <p class="atlas-status" id="atlasStatus" role="status" aria-live="polite"></p>
+        </section>
+
+        <section class="atlas-journal" aria-labelledby="atlasJournalTitle">
+          <div class="atlas-journal__heading">
+            <div><p class="atlas-eyebrow">YOUR FIELD NOTES</p><h2 id="atlasJournalTitle">Discovery journal</h2></div>
+            <span class="atlas-journal__count" id="atlasJournalCount">0</span>
+          </div>
+          <ul id="atlasJournalList" class="atlas-journal__list"><li class="atlas-journal__empty">Your discoveries will gather here.</li></ul>
+        </section>
+
+        <section class="atlas-game" aria-labelledby="atlasGameTitle">
+          <p class="atlas-eyebrow">A TINY SKY PUZZLE</p>
+          <h2 id="atlasGameTitle">Connect the little lights</h2>
+          <p>Choose each star in order to trace Pip's sleepy fox.</p>
+          <div class="atlas-game__stars" role="group" aria-label="Connect stars in order: one, two, three, four">
+            <button type="button" class="atlas-game__star" data-step="1" aria-label="Connect star one">1</button>
+            <button type="button" class="atlas-game__star" data-step="2" aria-label="Connect star two">2</button>
+            <button type="button" class="atlas-game__star" data-step="3" aria-label="Connect star three">3</button>
+            <button type="button" class="atlas-game__star" data-step="4" aria-label="Connect star four">4</button>
+          </div>
+          <svg class="atlas-game__result" viewBox="0 0 300 118" role="img" aria-label="A little fox constellation appears when all four stars are connected">
+            <path class="atlas-game__path" pathLength="1" d="M40 83 103 34 167 73 244 29"/>
+            <g class="atlas-game__fox" fill="#ffe8a6"><circle cx="40" cy="83" r="5"/><circle cx="103" cy="34" r="5"/><circle cx="167" cy="73" r="5"/><circle cx="244" cy="29" r="5"/></g>
+            <text class="atlas-game__completion" x="150" y="111" text-anchor="middle">THE SLEEPY FOX</text>
+          </svg>
+          <p class="atlas-game__message" id="atlasGameMessage" role="status" aria-live="polite">Tap 1, then 2, 3, and 4 to connect the stars.</p>
+          <button class="atlas-game__reset" id="atlasGameReset" type="button">Reset constellation</button>
+        </section>
+      </aside>
+    </div>
+
+    <aside class="atlas-companion" aria-label="Pip is exploring with you">
+      <div class="atlas-companion__avatar">
+        <div class="pip-character">
+          <canvas id="atlasPipCanvas" aria-label="Pip, your little dream engineer" role="img"></canvas>
+          <div class="pip-eye-overlay" aria-hidden="true">
+            <span class="pip-eye pip-eye--left"><span class="pip-pupil"><span class="pip-glint"></span></span></span>
+            <span class="pip-eye pip-eye--right"><span class="pip-pupil"><span class="pip-glint"></span></span></span>
+          </div>
+        </div>
+        <button class="pip-hitarea" id="atlasPipButton" type="button" aria-label="Say hello to Pip"></button>
+      </div>
+      <p>Pip is charting beside you <span aria-hidden="true">✦</span></p>
+      <div class="atlas-toast" id="atlasToast" role="status" aria-live="polite"></div>
+    </aside>
+  </main>
+
+  <section class="atlas-skills" aria-labelledby="atlasSkillsTitle">
+    <p class="atlas-eyebrow">REPOSITORY EVIDENCE</p>
+    <h2 id="atlasSkillsTitle">Skills in practice</h2>
+    <p>Skills come from saved repository evidence or owner-added notes. Presence in a repository does not measure proficiency.</p>
+    <p class="atlas-data-status" id="atlasDataStatus" role="status" aria-live="polite">Loading saved skills and projects…</p>
+    <div class="atlas-skills__constellation" id="atlasSkillsList" role="group" aria-label="Choose a saved skill"></div>
+    <article class="atlas-skill-note" id="atlasSkillNote" aria-live="polite" aria-atomic="true">
+      <p class="atlas-eyebrow">FIELD NOTE</p>
+      <h3 id="atlasSkillName">Choose a technology</h3>
+      <p id="atlasSkillStage">Evidence status: not assessed</p>
+      <p id="atlasSkillLearning">Choose a saved skill to view its category, source, and supporting evidence.</p>
+      <ul class="atlas-evidence-list" id="atlasSkillEvidence"></ul>
+      <div class="atlas-related-projects" id="atlasSkillProjects"></div>
+    </article>
+    <section class="atlas-project-directory" id="atlasProjectDirectory" aria-labelledby="atlasProjectDirectoryTitle" hidden>
+      <h3 id="atlasProjectDirectoryTitle">Saved projects</h3>
+      <div class="atlas-project-directory__list" id="atlasProjectsList"></div>
+    </section>
+    <article class="atlas-project-details" id="atlasProjectDetails" aria-live="polite" hidden>
+      <p class="atlas-eyebrow">PROJECT RECORD</p>
+      <h3 id="atlasProjectName"></h3>
+      <p id="atlasProjectDescription"></p>
+      <p class="atlas-project-status" id="atlasProjectStatus"></p>
+      <a id="atlasProjectRepository" hidden target="_blank" rel="noopener noreferrer">Open repository</a>
+      <ul class="atlas-project-skill-list" id="atlasProjectSkills"></ul>
+    </article>
+    <div class="atlas-empty-project" id="atlasProjectEmpty" hidden>
+      <p>No project records are saved yet. An owner can register a verified project and associate its technologies.</p>
+      <button class="atlas-owner-jump" type="button" data-owner-jump>Open owner tools</button>
+    </div>
+
+    <section class="atlas-owner-panel" aria-labelledby="atlasOwnerTitle">
+      <p class="atlas-eyebrow">PRIVATE OWNER ACTIONS</p>
+      <h3 id="atlasOwnerTitle">Manage repository records</h3>
+      <p>Management actions require the server's private owner token. It stays in this tab's memory and is sent only to this API.</p>
+      <form id="atlasUnlockForm" class="atlas-owner-form">
+        <label for="atlasOwnerToken">Owner token</label>
+        <input id="atlasOwnerToken" type="password" autocomplete="off" required minlength="32" maxlength="512">
+        <button class="atlas-owner-button" type="submit">Unlock owner tools</button>
+      </form>
+      <p class="atlas-owner-status" id="atlasOwnerStatus" role="status" aria-live="polite"></p>
+
+      <div class="atlas-owner-controls" id="atlasOwnerControls" hidden>
+        <section class="atlas-owner-tool" aria-labelledby="atlasScanTitle">
+          <h4 id="atlasScanTitle">Scan this repository</h4>
+          <p>Preview detected technologies and file evidence before importing selected results.</p>
+          <label for="atlasScanProject">Associate evidence with a project (optional)</label>
+          <select id="atlasScanProject"><option value="">No project association</option></select>
+          <button class="atlas-owner-button" id="atlasScanButton" type="button">Preview repository scan</button>
+          <p class="atlas-owner-status" id="atlasScanStatus" role="status" aria-live="polite"></p>
+          <div class="atlas-scan-preview" id="atlasScanPreview" hidden>
+            <p id="atlasScanSummary"></p>
+            <div class="atlas-scan-candidates" id="atlasScanCandidates"></div>
+            <button class="atlas-owner-button" id="atlasImportButton" type="button">Import selected evidence</button>
+          </div>
+        </section>
+
+        <section class="atlas-owner-tool" aria-labelledby="atlasManualTitle">
+          <h4 id="atlasManualTitle">Add Skills Manually</h4>
+          <label for="atlasManualSkills">Paste skill names, one per line or separated by commas</label>
+          <textarea id="atlasManualSkills" rows="5" maxlength="7000" placeholder="HTML&#10;CSS&#10;JavaScript&#10;Python"></textarea>
+          <div class="atlas-manual-preview" id="atlasManualPreview" aria-live="polite"></div>
+          <label for="atlasManualProject">Associate with a project (optional)</label>
+          <select id="atlasManualProject"><option value="">No project association</option></select>
+          <button class="atlas-owner-button" id="atlasSaveSkills" type="button" disabled>Save Skills</button>
+          <p class="atlas-owner-status" id="atlasManualStatus" role="status" aria-live="polite"></p>
+        </section>
+
+        <section class="atlas-owner-tool" aria-labelledby="atlasProjectFormTitle">
+          <h4 id="atlasProjectFormTitle">Register a project</h4>
+          <form id="atlasProjectForm" class="atlas-owner-form">
+            <label for="atlasProjectInputName">Project name</label>
+            <input id="atlasProjectInputName" name="name" required maxlength="120">
+            <label for="atlasProjectInputDescription">Description</label>
+            <textarea id="atlasProjectInputDescription" name="description" rows="3" maxlength="2000"></textarea>
+            <label for="atlasProjectInputUrl">Public repository URL (optional)</label>
+            <input id="atlasProjectInputUrl" name="repository_url" type="url" maxlength="2048" placeholder="https://…">
+            <label for="atlasProjectInputStatus">Project status</label>
+            <select id="atlasProjectInputStatus" name="status">
+              <option value="active">Active</option><option value="in_progress">In progress</option>
+              <option value="completed">Completed</option><option value="archived">Archived</option>
+            </select>
+            <label for="atlasProjectInputSkills">Technologies to associate (optional)</label>
+            <textarea id="atlasProjectInputSkills" name="skills" rows="3" placeholder="Python, Flask"></textarea>
+            <button class="atlas-owner-button" type="submit">Save project</button>
+          </form>
+          <p class="atlas-owner-status" id="atlasProjectFormStatus" role="status" aria-live="polite"></p>
+        </section>
+      </div>
+    </section>
+  </section>
+  <footer class="atlas-footer">
+    <span>KEEP FOLLOWING THE LITTLE LIGHTS</span>
+    <nav aria-label="Explore Dear Pip">
+      <a href="index.html">Home</a><a href="dreamworld.html">Dreamworld</a><a href="workshop.html">Workshop</a><a href="dream-atlas.html" aria-current="page">Dream Atlas</a>
+      <a href="dream-garden.html">Dream Garden</a><a href="bedtime-stories.html">Bedtime Stories</a><a href="lullaby-lab.html">Lullaby Lab</a>
+    </nav>
+  </footer>
+</body>
+</html>

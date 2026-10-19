@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#17152c">
+  <meta name="description" content="Make a gentle little lullaby with Pip's procedural music-box lab.">
+  <meta name="dear-pip-api-base" content="">
+  <title>The Lullaby Lab — Dear Pip</title>
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="style.css">
+  <script src="sounds.js" defer></script>
+  <script src="visitor-progress.js" defer></script>
+  <script src="lullaby-lab.js" defer></script>
+</head>
+<body class="lullaby-page">
+  <a class="lullaby-skip" href="#lullabyControls">Skip to the Lullaby Lab</a>
+  <header class="lullaby-header">
+    <a class="lullaby-brand" href="index.html" aria-label="Dear Pip home"><img class="brand-mascot__image" src="assets/pip.png" alt="" aria-hidden="true"> DEAR PIP <span>/</span> THE LULLABY LAB</a>
+    <button class="mood-toggle page-theme-toggle" type="button" data-theme-toggle aria-pressed="false" aria-label="Switch to light theme"><span data-theme-icon aria-hidden="true">☾</span> <span data-theme-label>Dark mode</span></button>
+    <a class="lullaby-back" href="dreamworld.html">← Back to Dreamworld</a>
+  </header>
+  <main class="lullaby-main">
+    <section class="lullaby-intro" aria-labelledby="lullabyTitle">
+      <p class="lullaby-eyebrow">A QUIET CORNER OF THE MIDNIGHT NURSERY</p>
+      <h1 id="lullabyTitle">The <em>Lullaby Lab</em></h1>
+      <p>Make a tiny, original music-box hum. Sound begins only when you ask for it.</p>
+    </section>
+    <section class="lullaby-panel" id="lullabyControls" aria-labelledby="soundTitle">
+      <div class="lullaby-panel__heading">
+        <p class="lullaby-eyebrow">PROCEDURAL SOUND · MADE IN YOUR BROWSER</p>
+        <h2 id="soundTitle">A little room-tone</h2>
+        <p>No recordings or downloaded songs; these soft tones are generated locally with Web Audio.</p>
+      </div>
+      <div class="lullaby-controls">
+        <button class="lullaby-button lullaby-button--primary" id="lullabyPlay" type="button">Start the music box</button>
+        <button class="lullaby-button" id="lullabyMute" type="button" aria-pressed="false" disabled>Mute</button>
+        <label class="lullaby-volume" for="lullabyVolume">Volume <input id="lullabyVolume" type="range" min="0" max="0.2" step="0.01" value="0.08" disabled></label>
+      </div>
+      <p class="lullaby-status" id="lullabyStatus" role="status" aria-live="polite">Sound is off. Start the music box whenever you are ready.</p>
+    </section>
+
+    <section class="lullaby-nightlight" id="lullabyNightlight" aria-labelledby="nightlightTitle">
+      <div class="lullaby-nightlight__content">
+        <p class="lullaby-eyebrow">A LITTLE POOL OF MOONLIGHT</p>
+        <h2 id="nightlightTitle">Find a hidden star</h2>
+        <p>Move a pointer across the sky, or switch on the small-screen nightlight.</p>
+        <button class="lullaby-button" id="lullabyReveal" type="button" aria-pressed="false">Turn on the nightlight</button>
+      </div>
+      <span class="lullaby-hidden-star" aria-hidden="true">✦</span>
+    </section>
+
+    <section class="lullaby-lab-grid">
+      <section class="lullaby-panel" aria-labelledby="bubbleTitle">
+        <p class="lullaby-eyebrow">KEEP A THOUGHT, ON THIS DEVICE</p>
+        <h2 id="bubbleTitle">Dream bubbles</h2>
+        <form id="dreamBubbleForm" class="lullaby-bubble-form">
+          <label for="dreamBubbleInput">A small idea for later</label>
+          <textarea id="dreamBubbleInput" maxlength="240" rows="3" placeholder="A moon garden with a tiny gate…"></textarea>
+          <button class="lullaby-button" type="submit">Tuck it in a bubble</button>
+        </form>
+        <p id="dreamBubbleStatus" class="lullaby-status" role="status" aria-live="polite"></p>
+        <ul id="dreamBubbleList" class="lullaby-bubble-list" aria-label="Your saved dream bubbles"></ul>
+      </section>
+      <section class="lullaby-panel lullaby-game" aria-labelledby="gameTitle">
+        <p class="lullaby-eyebrow">A TINY LISTENING GAME</p>
+        <h2 id="gameTitle">Echo Pip's three notes</h2>
+        <p>Listen, then repeat the pattern in order. Each button also plays its own soft note.</p>
+        <button class="lullaby-button" id="lullabyGameStart" type="button">Listen to the pattern</button>
+        <div class="lullaby-game__notes" role="group" aria-label="Choose one of three notes">
+          <button class="lullaby-note" type="button" data-note="0">Low moon</button>
+          <button class="lullaby-note" type="button" data-note="1">Middle star</button>
+          <button class="lullaby-note" type="button" data-note="2">High cloud</button>
+        </div>
+        <p id="lullabyGameStatus" class="lullaby-status" role="status" aria-live="polite">Start a round when you are ready.</p>
+      </section>
+    </section>
+  </main>
+  <footer class="lullaby-footer">
+    <span>LET THE LITTLE LIGHTS REST</span>
+    <nav aria-label="Explore Dear Pip">
+      <a href="index.html">Home</a><a href="dreamworld.html">Dreamworld</a><a href="workshop.html">Workshop</a>
+      <a href="dream-atlas.html">Dream Atlas</a><a href="dream-garden.html">Dream Garden</a><a href="bedtime-stories.html">Bedtime Stories</a><a href="lullaby-lab.html" aria-current="page">Lullaby Lab</a>
+    </nav>
+  </footer>
+</body>
+</html>

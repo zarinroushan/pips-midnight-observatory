@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#17152c">
+  <meta name="description" content="Plant little dreams, meet garden creatures, and keep a journal with Pip.">
+  <meta name="dear-pip-api-base" content="">
+  <title>The Dream Garden — Dear Pip</title>
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/@rive-app/canvas@2.30.3" defer></script>
+  <script src="sounds.js" defer></script>
+  <script src="dream-garden.js" defer></script>
+</head>
+<body class="garden-page">
+  <a class="garden-skip" href="#gardenScene">Skip to the dream garden</a>
+
+  <header class="garden-header">
+    <a class="garden-brand" href="index.html" aria-label="Dear Pip home">
+      <img class="brand-mascot__image" src="assets/pip.png" alt="" aria-hidden="true"> DEAR PIP <span class="garden-brand__divider">/</span> THE DREAM GARDEN
+    </a>
+    <button class="mood-toggle page-theme-toggle" type="button" data-theme-toggle aria-pressed="false" aria-label="Switch to light theme"><span data-theme-icon aria-hidden="true">☾</span> <span data-theme-label>Dark mode</span></button>
+    <a class="garden-back" href="dreamworld.html"><span aria-hidden="true">←</span> Back to Dreamworld</a>
+  </header>
+
+  <main class="garden-main">
+    <section class="garden-intro" aria-labelledby="gardenTitle">
+      <p class="garden-eyebrow">A LITTLE PATCH OF THE MIDNIGHT NURSERY</p>
+      <h1 id="gardenTitle">The <em>Dream Garden</em></h1>
+      <p>Plant a small wonder, give it a drink, and see what blooms.</p>
+    </section>
+
+    <section class="garden-scene" id="gardenScene" aria-label="Interactive dream garden">
+      <svg class="garden-landscape" viewBox="0 0 1200 590" role="img" aria-labelledby="gardenSceneTitle gardenSceneDesc">
+        <title id="gardenSceneTitle">Pip's moonlit dream garden</title>
+        <desc id="gardenSceneDesc">An enchanted violet garden beneath the crescent moon, with rolling hills, glowing mushrooms, a little pond, and places to plant dream seeds.</desc>
+        <defs>
+          <linearGradient id="garden-sky" x1="0" y1="0" x2="0" y2="1">
+            <stop stop-color="#242044"/>
+            <stop offset=".64" stop-color="#30264c"/>
+            <stop offset="1" stop-color="#514064"/>
+          </linearGradient>
+          <linearGradient id="garden-hill" x1="0" y1="0" x2="0" y2="1">
+            <stop stop-color="#62735f"/>
+            <stop offset="1" stop-color="#303f4b"/>
+          </linearGradient>
+          <radialGradient id="garden-moon-glow">
+            <stop stop-color="#ffe9a8" stop-opacity=".36"/>
+            <stop offset="1" stop-color="#ffe9a8" stop-opacity="0"/>
+          </radialGradient>
+          <filter id="garden-glow" x="-100%" y="-100%" width="300%" height="300%">
+            <feGaussianBlur stdDeviation="6" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <pattern id="garden-stars" width="170" height="120" patternUnits="userSpaceOnUse">
+            <circle cx="20" cy="22" r="2" fill="#fff0c2" opacity=".7"/>
+            <circle cx="99" cy="64" r="1.4" fill="#f3bdd0" opacity=".68"/>
+            <path d="M143 16v10m-5-5h10" stroke="#ffe6a6" stroke-width="1.5" opacity=".7"/>
+            <circle cx="55" cy="102" r="1" fill="#fff0c2" opacity=".45"/>
+          </pattern>
+        </defs>
+        <rect width="1200" height="590" rx="28" fill="url(#garden-sky)"/>
+        <rect width="1200" height="395" rx="28" fill="url(#garden-stars)"/>
+        <circle cx="1002" cy="112" r="100" fill="url(#garden-moon-glow)"/>
+        <circle cx="1002" cy="112" r="45" fill="#fff0c8"/>
+        <circle cx="1023" cy="91" r="42" fill="#292344"/>
+        <g fill="#ffe8a6" filter="url(#garden-glow)">
+          <path d="M180 142l5 13 13 5-13 5-5 13-5-13-13-5 13-5z"/>
+          <path d="M729 104l4 10 10 4-10 4-4 10-4-10-10-4 10-4z"/>
+          <path d="M1105 230l5 12 12 5-12 5-5 12-5-12-12-5 12-5z"/>
+          <circle cx="532" cy="179" r="4"/><circle cx="866" cy="204" r="3"/>
+        </g>
+        <path d="M0 355Q161 296 306 350T598 342T900 334T1200 340V590H0Z" fill="#374253"/>
+        <path d="M0 403Q182 325 376 391T750 380T1200 389V590H0Z" fill="url(#garden-hill)"/>
+        <path d="M0 454Q157 387 333 432T672 419T1000 433T1200 414V590H0Z" fill="#34464a"/>
+        <path d="M0 505Q216 445 406 484T794 471T1200 465V590H0Z" fill="#273a43"/>
+        <path d="M823 450q53-36 111 0-58 52-111 0z" fill="#657488" opacity=".72"/>
+        <path d="M842 451q37-17 72 0" fill="none" stroke="#f3bdd0" stroke-opacity=".55" stroke-width="3"/>
+        <g class="garden-landscape-mushrooms">
+          <path d="M121 469v-40q0-18 18-18t18 18v40" fill="#e9c9a0"/>
+          <path d="M106 432q4-37 33-38 31 1 35 38z" fill="#e890ad" filter="url(#garden-glow)"/>
+          <circle cx="128" cy="414" r="4" fill="#fff0c8"/><circle cx="149" cy="411" r="4" fill="#fff0c8"/>
+          <path d="M1060 466v-46q0-16 16-16t16 16v46" fill="#e9c9a0"/>
+          <path d="M1042 423q4-36 34-37 28 2 33 37z" fill="#f0c877" filter="url(#garden-glow)"/>
+          <circle cx="1064" cy="408" r="4" fill="#fff0c8"/><circle cx="1085" cy="407" r="4" fill="#fff0c8"/>
+        </g>
+        <g class="garden-fireflies" fill="#ffe8a6" filter="url(#garden-glow)">
+          <circle cx="245" cy="360" r="3"/><circle cx="424" cy="321" r="3"/><circle cx="662" cy="355" r="3"/>
+          <circle cx="938" cy="349" r="3"/><circle cx="786" cy="292" r="2.5"/><circle cx="354" cy="258" r="2"/>
+        </g>
+      </svg>
+
+      <div class="garden-plots" id="gardenPlots" aria-label="Garden planting plots"></div>
+
+      <div class="garden-creatures" aria-label="Hidden garden friends">
+        <button class="garden-creature garden-creature--moth" type="button" data-creature="moth" aria-label="Discover the Moon Moth" aria-controls="gardenDreamPanel" aria-pressed="false">
+          <span aria-hidden="true">🦋</span><span class="garden-creature__label">?</span>
+        </button>
+        <button class="garden-creature garden-creature--snail" type="button" data-creature="snail" aria-label="Discover the Dandelion Snail" aria-controls="gardenDreamPanel" aria-pressed="false">
+          <span aria-hidden="true">🐌</span><span class="garden-creature__label">?</span>
+        </button>
+        <button class="garden-creature garden-creature--sprite" type="button" data-creature="sprite" aria-label="Discover the Dewdrop Sprite" aria-controls="gardenDreamPanel" aria-pressed="false">
+          <span aria-hidden="true">✨</span><span class="garden-creature__label">?</span>
+        </button>
+        <button class="garden-creature garden-creature--rabbit" type="button" data-creature="rabbit" aria-label="Discover Clover Rabbit" aria-controls="gardenDreamPanel" aria-pressed="false">
+          <span aria-hidden="true">🐇</span><span class="garden-creature__label">?</span>
+        </button>
+        <button class="garden-creature garden-creature--fox" type="button" data-creature="fox" aria-label="Discover Amber Fox" aria-controls="gardenDreamPanel" aria-pressed="false">
+          <span aria-hidden="true">🦊</span><span class="garden-creature__label">?</span>
+        </button>
+        <button class="garden-creature garden-creature--bird" type="button" data-creature="bird" aria-label="Discover the Lullaby Bird" aria-controls="gardenDreamPanel" aria-pressed="false">
+          <span aria-hidden="true">🐦</span><span class="garden-creature__label">?</span>
+        </button>
+      </div>
+      <p class="garden-scene-hint">Look closely for tiny garden friends ✧</p>
+    </section>
+
+    <section class="garden-dream-panel" id="gardenDreamPanel" aria-labelledby="gardenDreamName" aria-live="polite" aria-atomic="true" hidden>
+      <p class="garden-eyebrow">A WOODLAND FRIEND'S FICTIONAL DREAM</p>
+      <h2 id="gardenDreamName"></h2>
+      <p class="garden-dream-personality" id="gardenDreamPersonality"></p>
+      <div class="garden-dream-panel__columns">
+        <div>
+          <h3>Little wish</h3>
+          <p id="gardenDreamWish"></p>
+        </div>
+        <div>
+          <h3>A bit of their story</h3>
+          <p id="gardenDreamStory"></p>
+        </div>
+        <div>
+          <h3>Pip's imagined invention</h3>
+          <p id="gardenDreamInvention"></p>
+        </div>
+      </div>
+      <p class="garden-dream-note">This is a fictional garden story and invention, not a real portfolio project.</p>
+    </section>
+
+    <div class="garden-workbench">
+      <section class="garden-seeds" aria-labelledby="gardenSeedsTitle">
+        <div class="garden-section-heading">
+          <div><p class="garden-eyebrow">CHOOSE A LITTLE BEGINNING</p><h2 id="gardenSeedsTitle">Dream seeds</h2></div>
+          <p class="garden-counter"><span id="gardenFlowerCount">0</span> flowers planted</p>
+        </div>
+        <div class="garden-seed-list" id="gardenSeedList" role="group" aria-label="Choose a dream seed"></div>
+        <button class="garden-plant-button" id="gardenPlantButton" type="button" disabled>Choose a seed to plant</button>
+        <p class="garden-feedback" id="gardenFeedback" role="status" aria-live="polite"></p>
+        <p class="garden-sync-status" id="gardenSyncStatus" role="status" aria-live="polite">Garden progress stays on this device until sync is ready.</p>
+      </section>
+
+      <aside class="garden-journal" aria-labelledby="gardenJournalTitle">
+        <div class="garden-section-heading">
+          <div><p class="garden-eyebrow">THINGS THAT GREW</p><h2 id="gardenJournalTitle">Garden journal</h2></div>
+          <span class="garden-creature-counter"><span id="gardenCreatureCount">0</span><span> / 6<br>FRIENDS</span></span>
+        </div>
+        <div class="garden-journal-block">
+          <h3>Flowers</h3>
+          <ul id="gardenFlowerJournal" class="garden-journal-list"><li class="garden-journal-empty">No flowers planted yet.</li></ul>
+        </div>
+        <div class="garden-journal-block">
+          <h3>Garden friends</h3>
+          <ul id="gardenCreatureJournal" class="garden-journal-list"><li class="garden-journal-empty">No friends found yet.</li></ul>
+        </div>
+        <div class="garden-journal-block garden-journal-block--fulfilled">
+          <h3>Dreams fulfilled</h3>
+          <ul id="gardenFulfilledDreamJournal" class="garden-journal-list" aria-live="polite" aria-relevant="additions text">
+            <li class="garden-journal-empty">No dreams fulfilled yet.</li>
+          </ul>
+        </div>
+        <div class="garden-journal-block">
+          <h3>Private wishes</h3>
+          <ul id="gardenPrivateDreamJournal" class="garden-journal-list" aria-live="polite">
+            <li class="garden-journal-empty">Your private wishes will appear here.</li>
+          </ul>
+        </div>
+        <button class="garden-reset" id="gardenReset" type="button">Reset this garden</button>
+      </aside>
+    </div>
+
+    <section class="garden-private-dreams" aria-labelledby="gardenPrivateDreamTitle">
+      <div>
+        <p class="garden-eyebrow">JUST FOR THIS GARDEN</p>
+        <h2 id="gardenPrivateDreamTitle">A private wish for Pip</h2>
+        <p>Saved to this garden’s existing private progress record. It is separate from the public guestbook.</p>
+      </div>
+      <form id="gardenPrivateDreamForm">
+        <label for="gardenPrivateDreamCreature">Choose a garden friend</label>
+        <select id="gardenPrivateDreamCreature" required>
+          <option value="moth">Moon Moth</option><option value="snail">Dandelion Snail</option>
+          <option value="sprite">Dewdrop Sprite</option><option value="rabbit">Clover Rabbit</option>
+          <option value="fox">Amber Fox</option><option value="bird">Lullaby Bird</option>
+        </select>
+        <label for="gardenPrivateDream">Your wish <span>(up to 250 characters)</span></label>
+        <textarea id="gardenPrivateDream" maxlength="250" rows="3" required></textarea>
+        <button type="submit">Tuck it into the garden</button>
+        <p id="gardenPrivateDreamStatus" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <section class="garden-guestbook" aria-labelledby="gardenGuestbookTitle">
+      <div class="garden-guestbook__intro">
+        <p class="garden-eyebrow">A LITTLE NOTE FOR THE NURSERY</p>
+        <h2 id="gardenGuestbookTitle">Leave a Dream for Pip</h2>
+        <p>Share a note for the nursery guestbook. This is public after moderation; use the private journal above for personal wishes.</p>
+      </div>
+      <form class="garden-guestbook__form" id="gardenGuestbookForm">
+        <label for="gardenGuestbookName">Display name <span>(optional)</span></label>
+        <input id="gardenGuestbookName" name="display_name" type="text" maxlength="60" autocomplete="nickname">
+        <label for="gardenGuestbookMessage">Your dream <span>(required, up to 1000 characters)</span></label>
+        <textarea id="gardenGuestbookMessage" name="dream_message" maxlength="1000" rows="4" required></textarea>
+        <button class="garden-guestbook__submit" id="gardenGuestbookSubmit" type="submit">Send your dream</button>
+        <p class="garden-guestbook__status" id="gardenGuestbookStatus" role="status" aria-live="polite"></p>
+      </form>
+      <div class="garden-guestbook__entries" aria-labelledby="gardenGuestbookEntriesTitle">
+        <h3 id="gardenGuestbookEntriesTitle">Dreams shared with Pip</h3>
+        <ul class="garden-guestbook__list" id="gardenGuestbookEntries" aria-live="polite">
+          <li class="garden-guestbook__empty">Approved dreams will appear here.</li>
+        </ul>
+      </div>
+      <p class="garden-guestbook__privacy">Garden progress is associated with an unguessable browser ID stored on this device. It is not account security or private from anyone who obtains that ID.</p>
+    </section>
+
+    <aside class="garden-companion" aria-label="Pip is gardening with you">
+      <div class="garden-companion__avatar">
+        <div class="pip-character">
+          <canvas id="gardenPipCanvas" aria-label="Pip, your little dream engineer" role="img"></canvas>
+          <div class="pip-eye-overlay" aria-hidden="true">
+            <span class="pip-eye pip-eye--left"><span class="pip-pupil"><span class="pip-glint"></span></span></span>
+            <span class="pip-eye pip-eye--right"><span class="pip-pupil"><span class="pip-glint"></span></span></span>
+          </div>
+        </div>
+        <button class="pip-hitarea" id="gardenPipButton" type="button" aria-label="Say hello to Pip"></button>
+      </div>
+      <p>Pip is keeping the moonlight warm <span aria-hidden="true">✦</span></p>
+      <div class="garden-toast" id="gardenToast" role="status" aria-live="polite"></div>
+    </aside>
+  </main>
+
+  <footer class="garden-footer">
+    <span>GROW A DREAM, KEEP A LITTLE LIGHT</span>
+    <nav aria-label="Explore Dear Pip">
+      <a href="index.html">Home</a><a href="dreamworld.html">Dreamworld</a><a href="workshop.html">Workshop</a><a href="dream-garden.html" aria-current="page">Dream Garden</a>
+      <a href="dream-atlas.html">Dream Atlas</a><a href="bedtime-stories.html">Bedtime Stories</a><a href="lullaby-lab.html">Lullaby Lab</a>
+    </nav>
+  </footer>
+</body>
+</html>

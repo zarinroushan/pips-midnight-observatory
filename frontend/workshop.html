@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#17152c">
+  <meta name="description" content="Explore the real projects growing in Pip's Workshop.">
+  <title>Pip's Workshop — Dear Pip</title>
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="style.css">
+  <script src="sounds.js" defer></script>
+  <script src="workshop.js" defer></script>
+</head>
+<body class="workshop-page">
+  <a class="workshop-skip" href="#workshopProjects">Skip to the project shelf</a>
+  <header class="workshop-header">
+    <a class="workshop-brand" href="index.html" aria-label="Dear Pip home"><img class="brand-mascot__image" src="assets/pip.png" alt="" aria-hidden="true"> DEAR PIP <span>/</span> PIP'S WORKSHOP</a>
+    <button class="mood-toggle page-theme-toggle" type="button" data-theme-toggle aria-pressed="false" aria-label="Switch to light theme"><span data-theme-icon aria-hidden="true">☾</span> <span data-theme-label>Dark mode</span></button>
+    <a class="workshop-back" href="dreamworld.html">← Back to Dreamworld</a>
+  </header>
+  <main class="workshop-main">
+    <section class="workshop-intro" aria-labelledby="workshopTitle">
+      <p class="workshop-eyebrow">REAL PROJECTS · IMAGINED AS INVENTIONS</p>
+      <h1 id="workshopTitle">Pip's <em>Workshop</em></h1>
+      <p>Every invention begins with a real problem, a curious question, or a small thing worth making better. Fictional Pip lore is kept separate from the workbench notes.</p>
+    </section>
+    <section class="workshop-shelf" id="workshopProjects" aria-labelledby="workshopShelfTitle">
+      <div class="workshop-section-heading">
+        <div><p class="workshop-eyebrow">THE WORKBENCH</p><h2 id="workshopShelfTitle">Projects on the shelf</h2></div>
+        <p class="workshop-count" id="workshopCount" aria-live="polite"></p>
+      </div>
+      <form class="workshop-filters" id="workshopFilters" role="search">
+        <label>Find a project <input id="workshopSearch" type="search" placeholder="Name or technology" autocomplete="off"></label>
+        <label>Kind of work
+          <select id="workshopCategory">
+            <option value="">All categories</option>
+            <option value="web">Web experience</option>
+          </select>
+        </label>
+        <label>Technology
+          <select id="workshopTechnology">
+            <option value="">All technologies</option>
+            <option value="html">HTML</option>
+            <option value="css">CSS</option>
+            <option value="javascript">JavaScript</option>
+            <option value="flask">Flask</option>
+            <option value="postgresql">PostgreSQL</option>
+          </select>
+        </label>
+      </form>
+      <div class="workshop-results" id="workshopResults" aria-live="polite"></div>
+      <p class="workshop-empty" id="workshopEmpty" hidden>No projects match those filters yet. Try another little search.</p>
+    </section>
+    <section class="workshop-about" aria-labelledby="workshopAboutTitle">
+      <p class="workshop-eyebrow">A NOTE FROM THE MAKER</p>
+      <h2 id="workshopAboutTitle">This portfolio is still growing.</h2>
+      <p>Only work supported by the project files is listed here. More verified project notes, screenshots, and public links can be added when they are available.</p>
+    </section>
+  </main>
+  <footer class="workshop-footer">
+    <span>MAKE A LITTLE THING THAT HELPS</span>
+    <nav aria-label="Explore Dear Pip">
+      <a href="index.html">Home</a><a href="dreamworld.html">Dreamworld</a><a href="workshop.html" aria-current="page">Workshop</a><a href="dream-atlas.html">Dream Atlas</a>
+      <a href="dream-garden.html">Dream Garden</a><a href="bedtime-stories.html">Bedtime Stories</a><a href="lullaby-lab.html">Lullaby Lab</a>
+    </nav>
+  </footer>
+</body>
+</html>
