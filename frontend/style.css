@@ -4453,7 +4453,8 @@ body[data-mood="dawn"] .status > span { background: #f4cf78; box-shadow: 0 0 12p
 @media (max-width: 620px) {
   .atlas-header,
   .atlas-footer,
-  .atlas-main {
+  .atlas-main,
+  .atlas-skills {
     width: min(100% - 30px, 1320px);
   }
 
@@ -6376,9 +6377,9 @@ body[data-mood="dawn"] .status > span { background: #f4cf78; box-shadow: 0 0 12p
 }
 
 .atlas-skills {
-  width: min(100% - 48px, 980px);
-  margin: 32px auto;
-  padding: clamp(20px, 4vw, 32px);
+  width: min(100% - 48px, 1320px);
+  margin: 36px auto;
+  padding: clamp(20px, 4vw, 36px);
   border: 1px solid rgba(215, 193, 236, .18);
   border-radius: 20px;
   background: rgba(31, 30, 58, .55);
@@ -6518,7 +6519,7 @@ body[data-mood="dawn"] .status > span { background: #f4cf78; box-shadow: 0 0 12p
 @media (max-width: 700px) {
   .atlas-owner-controls { grid-template-columns: minmax(0, 1fr); }
   .atlas-owner-tool:first-child { grid-column: auto; }
-  .atlas-skills { width: min(100% - 28px, 980px); }
+  .atlas-skills { width: min(100% - 28px, 1320px); }
 }
 
 .bedtime-fiction-note {
@@ -6663,7 +6664,10 @@ body[data-mood="dawn"] .nursery-portal {
     padding: 22px;
   }
 
-  .atlas-skills,
+  .atlas-skills {
+    width: min(100% - 28px, 1320px);
+  }
+
   .bedtime-fiction-note,
   .bedtime-real-notes {
     width: min(100% - 28px, 980px);
@@ -7810,77 +7814,6 @@ html {
     flex: 0 0 auto;
     margin-top: 10px;
     padding: 12px 18px;
-  }
-
-  /* Dream Atlas Observatory */
-  .atlas-page {
-    height: 100svh;
-    max-height: 100svh;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .atlas-header,
-  .atlas-footer {
-    flex: 0 0 auto;
-  }
-
-  .atlas-header {
-    min-height: 56px;
-  }
-
-  .atlas-main {
-    flex: 1 1 0;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    padding-bottom: 8px;
-  }
-
-  .atlas-intro {
-    flex: 0 0 auto;
-    padding: 12px 0 8px;
-  }
-
-  .atlas-layout {
-    flex: 1 1 0;
-    min-height: 0;
-    display: grid;
-    grid-template-columns: minmax(0, 1.4fr) minmax(320px, 420px);
-    gap: 20px;
-    overflow: hidden;
-  }
-
-  .atlas-chart-card {
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    height: 100%;
-    overflow: hidden;
-  }
-
-  .atlas-star-chart {
-    flex: 1 1 0;
-    min-height: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .atlas-chart-art {
-    max-height: 100%;
-    max-width: 100%;
-    aspect-ratio: 1000 / 620;
-  }
-
-  .atlas-side {
-    max-height: 100%;
-    overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(244, 207, 120, 0.4) transparent;
-    padding-right: 6px;
   }
 
   /* Lullaby Lab */
