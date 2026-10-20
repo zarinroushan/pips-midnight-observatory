@@ -58,6 +58,11 @@ GARDEN_CREATURE_SEEDS = {
     "fox": "dreamrose",
     "bird": "cloudbell",
 }
+ACTIVE_GARDEN_CREATURE_SEEDS = {
+    creature: seed
+    for creature, seed in GARDEN_CREATURE_SEEDS.items()
+    if creature != "sprite"
+}
 GARDEN_PLOT_COUNT = 5
 GUESTBOOK_RATE_LIMIT = 5
 GUESTBOOK_RATE_WINDOW_SECONDS = 600
@@ -154,10 +159,14 @@ def garden_state_conflict(current):
 
 
 def validate_garden_state(value):
-    if not isinstance(value, dict) or set(value) not in (
-        {"version", "plots", "creatures", "plotOwners", "fulfilled"},
-        {"version", "plots", "creatures", "plotOwners", "fulfilled", "dreamJournal"},
-    ):
+    base_keys = {"version", "plots", "creatures", "plotOwners", "fulfilled"}
+    allowed_keys = (
+        base_keys,
+        base_keys | {"dreamJournal"},
+        base_keys | {"creatureLayout"},
+        base_keys | {"dreamJournal", "creatureLayout"},
+    )
+    if not isinstance(value, dict) or set(value) not in allowed_keys:
         return None
     if type(value["version"]) is not int or value["version"] != 1:
         return None
@@ -253,6 +262,25 @@ def validate_garden_state(value):
     }
     if "dreamJournal" in value:
         normalized["dreamJournal"] = normalized_journal
+    if "creatureLayout" in value:
+        layout = value["creatureLayout"]
+        if not isinstance(layout, dict) or any(
+            creature not in ACTIVE_GARDEN_CREATURE_SEEDS
+            for creature in layout
+        ):
+            return None
+        normalized_layout = {}
+        for creature, position in layout.items():
+            if not isinstance(position, dict) or set(position) != {"x", "y", "scale"}:
+                return None
+            x, y, scale = position["x"], position["y"], position["scale"]
+            if any(
+                isinstance(number, bool) or not isinstance(number, (int, float))
+                for number in (x, y, scale)
+            ) or not 0 <= x <= 100 or not 0 <= y <= 100 or not 0.65 <= scale <= 1.5:
+                return None
+            normalized_layout[creature] = {"x": x, "y": y, "scale": scale}
+        normalized["creatureLayout"] = normalized_layout
     return normalized
 
 
@@ -552,7 +580,7 @@ def get_garden_wish_counts():
     connection_url = database_url()
     if not connection_url:
         return jsonify(error="Garden storage is temporarily unavailable."), 503
-    counts = {creature: 0 for creature in GARDEN_CREATURE_SEEDS}
+    counts = {creature: 0 for creature in ACTIVE_GARDEN_CREATURE_SEEDS}
     try:
         with connect_database(connection_url) as connection:
             rows = connection.execute(
@@ -569,7 +597,7 @@ def get_garden_wish_counts():
                 WHERE wish->>'creature' = ANY(%s)
                 GROUP BY wish->>'creature'
                 """,
-                (list(GARDEN_CREATURE_SEEDS),),
+                (list(ACTIVE_GARDEN_CREATURE_SEEDS),),
             ).fetchall()
     except psycopg.Error as error:
         return garden_database_unavailable(error)

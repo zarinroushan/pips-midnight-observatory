@@ -38,16 +38,6 @@ const creatures = {
     invention: 'Pip imagines a tiny Starlight Seed-Cart: a gentle rolling nook that carries Nova and her starry shell over the garden paths.',
     dreamSeed: 'starfern',
   },
-  sprite: {
-    name: 'Dewdrop Sprite',
-    description: 'A bright-eyed sprite who gathers dew to water the night flowers.',
-    personality: 'Curious, cheerful, and always ready to share what she finds.',
-    icon: '💧',
-    wish: 'She dreams of saving enough morning dew to help the garden sparkle through a long, dry night.',
-    story: 'Before sunrise, Dewdrop Sprite tiptoes across the leaves, collecting the very roundest drops in a little crystal cup.',
-    invention: 'Pip imagines a Dewdrop Catcher: a tiny leaf-shaped collector that stores cool droplets and releases them as a silver mist when the flowers need a drink.',
-    dreamSeed: 'cloudbell',
-  },
   rabbit: {
     name: 'Mochi',
     title: 'Guardian of Peace',
@@ -82,6 +72,10 @@ const creatures = {
     dreamSeed: 'cloudbell',
   },
 };
+const legacyCreatureIds = new Set(['sprite']);
+const legacyCreature = { name: 'Garden friend', icon: '✧', dreamSeed: 'cloudbell' };
+const creatureInfo = (id) => creatures[id] || (legacyCreatureIds.has(id) ? legacyCreature : null);
+const validCreatureIds = new Set([...Object.keys(creatures), ...legacyCreatureIds]);
 
 const plotRoot = document.querySelector('#gardenPlots');
 const seedRoot = document.querySelector('#gardenSeedList');
@@ -93,6 +87,7 @@ const flowerJournal = document.querySelector('#gardenFlowerJournal');
 const creatureJournal = document.querySelector('#gardenCreatureJournal');
 const fulfilledDreamJournal = document.querySelector('#gardenFulfilledDreamJournal');
 const privateDreamForm = document.querySelector('#gardenPrivateDreamForm');
+const gardenResetButton = document.querySelector('#gardenReset');
 const privateDreamInput = document.querySelector('#gardenPrivateDream');
 const privateDreamCreature = document.querySelector('#gardenPrivateDreamCreature');
 const privateDreamStatus = document.querySelector('#gardenPrivateDreamStatus');
@@ -137,9 +132,11 @@ const fulfilledDreams = new Set();
 let dreamJournal = [];
 const confirmedWishIds = new Set();
 const pendingWishRemovalIds = new Set();
+const pendingWishRemovalEntries = new Map();
 const guardianWishCounts = new Map();
 let guardianWishCountsRequest = 0;
 const wishStarPositions = new Map();
+let gardenCreatureLayout = {};
 let activeWishDetailsId = null;
 let wishDetailsReturnFocus = null;
 const wishStarSlots = (() => {
@@ -202,6 +199,19 @@ function createGardenRecordId() {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
+function normalizeCreatureLayout(layout) {
+  const normalized = {};
+  if (!layout || typeof layout !== 'object' || Array.isArray(layout)) return normalized;
+  Object.entries(layout).forEach(([id, position]) => {
+    if (!Object.hasOwn(creatures, id) || !position || typeof position !== 'object') return;
+    const { x, y, scale } = position;
+    if ([x, y, scale].some((value) => typeof value !== 'number' || !Number.isFinite(value))
+      || x < 0 || x > 100 || y < 0 || y > 100 || scale < 0.65 || scale > 1.5) return;
+    normalized[id] = { x, y, scale };
+  });
+  return normalized;
+}
+
 function gardenStateSnapshot() {
   return {
     version: 1,
@@ -210,6 +220,9 @@ function gardenStateSnapshot() {
     plotOwners: [...plotDreamOwners],
     fulfilled: [...fulfilledDreams],
     dreamJournal: dreamJournal.slice(-20),
+    creatureLayout: Object.fromEntries(
+      Object.entries(gardenCreatureLayout).map(([id, position]) => [id, { ...position }]),
+    ),
   };
 }
 
@@ -217,7 +230,7 @@ function normalizeGardenState(state) {
   if (!state || state.version !== 1 || !Array.isArray(state.plots) || state.plots.length !== 5
     || !Array.isArray(state.creatures) || !Array.isArray(state.plotOwners) || state.plotOwners.length !== 5
     || !Array.isArray(state.fulfilled)) return null;
-  const validCreatures = new Set(Object.keys(creatures));
+  const validCreatures = validCreatureIds;
   const validSeeds = new Set(Object.keys(seeds));
   if (state.creatures.some((id) => !validCreatures.has(id))
     || state.fulfilled.some((id) => !validCreatures.has(id))) return null;
@@ -232,7 +245,7 @@ function normalizeGardenState(state) {
   const validFulfilled = state.fulfilled.filter((id) => nextPlots.some((plot, index) => (
     plot
     && plot.stage === 2
-    && plot.seed === creatures[id].dreamSeed
+    && plot.seed === creatureInfo(id).dreamSeed
     && nextOwners[index] === id
   )));
   const journal = Array.isArray(state.dreamJournal) ? state.dreamJournal : [];
@@ -241,7 +254,7 @@ function normalizeGardenState(state) {
     || !entry.wish.trim() || entry.wish.length > 250 || !validCreatures.has(entry.creature)
     || typeof entry.createdAt !== 'string' || Number.isNaN(Date.parse(entry.createdAt))
   ))) return null;
-  return {
+  const normalized = {
     version: 1,
     plots: nextPlots,
     creatures: [...new Set(state.creatures)],
@@ -251,6 +264,8 @@ function normalizeGardenState(state) {
       id: entry.id, wish: entry.wish.trim(), creature: entry.creature, createdAt: entry.createdAt,
     })),
   };
+  normalized.creatureLayout = normalizeCreatureLayout(state.creatureLayout);
+  return normalized;
 }
 
 function mergeGardenStates(serverState, localState) {
@@ -261,6 +276,7 @@ function mergeGardenStates(serverState, localState) {
     plotOwners: Array(5).fill(null),
     fulfilled: [],
     dreamJournal: [],
+    creatureLayout: {},
   };
   const local = normalizeGardenState(localState);
   if (!local) return { state: merged, overflow: false };
@@ -277,6 +293,7 @@ function mergeGardenStates(serverState, localState) {
   merged.dreamJournal = [...new Map([...serverEntries, ...unconfirmedLocalEntries]
     .map((entry) => [entry.id, entry])).values()]
     .sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt)).slice(-20);
+  merged.creatureLayout = { ...merged.creatureLayout, ...local.creatureLayout };
   let overflow = false;
 
   local.plots.forEach((plot, localIndex) => {
@@ -304,7 +321,7 @@ function mergeGardenStates(serverState, localState) {
     merged.plots.some((plot, index) => (
       plot
       && plot.stage === 2
-      && plot.seed === creatures[id].dreamSeed
+      && plot.seed === creatureInfo(id).dreamSeed
       && merged.plotOwners[index] === id
     ))
   ));
@@ -319,6 +336,7 @@ function storeGardenStateLocally(state) {
   fulfilledDreams.clear();
   state.fulfilled.forEach((id) => fulfilledDreams.add(id));
   dreamJournal = [...(state.dreamJournal || [])];
+  gardenCreatureLayout = { ...(state.creatureLayout || {}) };
 
   if (localGardenDataInvalid || localDreamDataInvalid) return;
   try {
@@ -326,6 +344,7 @@ function storeGardenStateLocally(state) {
       version: 1,
       plots,
       creatures: [...discoveredCreatures],
+      creatureLayout: gardenCreatureLayout,
     }));
     window.localStorage.setItem(gardenDreamStorageKey, JSON.stringify({
       version: 1,
@@ -334,6 +353,7 @@ function storeGardenStateLocally(state) {
       dreamJournal,
       confirmedWishIds: [...confirmedWishIds].filter((id) => dreamJournal.some((entry) => entry.id === id)),
       pendingWishRemovalIds: [...pendingWishRemovalIds],
+      pendingWishRemovalEntries: [...pendingWishRemovalEntries.values()],
       resetRequested: pendingReset,
     }));
   } catch (error) {
@@ -355,7 +375,10 @@ function markWishIdsConfirmed(state) {
       changed = true;
     }
   });
-  if (changed) persistWishSyncMetadata();
+  if (changed) {
+    persistWishSyncMetadata();
+    renderWishStars();
+  }
   return changed;
 }
 
@@ -371,6 +394,7 @@ function persistWishSyncMetadata() {
       dreamJournal,
       confirmedWishIds: [...confirmedWishIds].filter((id) => dreamJournal.some((entry) => entry.id === id)),
       pendingWishRemovalIds: [...pendingWishRemovalIds],
+      pendingWishRemovalEntries: [...pendingWishRemovalEntries.values()],
       resetRequested: pendingReset,
     }));
   } catch (error) {
@@ -414,6 +438,7 @@ async function readGardenApiJson(response, serviceName) {
 
 function scheduleGardenSync(delay = 500) {
   gardenSyncPending = true;
+  gardenResetButton.disabled = true;
   if (!gardenSyncReady) return;
   window.clearTimeout(gardenSyncTimer);
   gardenSyncTimer = window.setTimeout(() => {
@@ -452,6 +477,7 @@ async function syncGardenState() {
           : mergeGardenStates(result.state, localState);
         if (merged.overflow) {
           gardenSyncPending = false;
+          gardenResetButton.disabled = false;
           setSyncStatus('Both gardens are full; your local garden is kept on this device and was not overwritten.', 'offline');
           return;
         }
@@ -485,12 +511,15 @@ async function syncGardenState() {
       }
       if (sentVersion === gardenChangeVersion) {
         gardenSyncPending = false;
+        gardenResetButton.disabled = false;
         pendingWishRemovalIds.clear();
+        pendingWishRemovalEntries.clear();
         for (const id of confirmedWishIds) {
           if (!dreamJournal.some((entry) => entry.id === id)) confirmedWishIds.delete(id);
         }
         persistWishSyncMetadata();
         setGardenSavedStatus();
+        renderWishStars();
         renderPrivateDreams();
         loadGuardianWishCounts();
       }
@@ -536,6 +565,7 @@ async function initializeGardenSync() {
       render();
     }
     gardenSyncReady = true;
+    gardenResetButton.disabled = false;
     render();
     const shouldSave = !merged.overflow && (pendingReset
       || (result.state
@@ -562,7 +592,8 @@ function hasGardenProgress(state) {
   return state.plots.some(Boolean)
     || state.creatures.length > 0
     || state.fulfilled.length > 0
-    || Boolean(state.dreamJournal?.length);
+    || Boolean(state.dreamJournal?.length)
+    || Boolean(Object.keys(state.creatureLayout || {}).length);
 }
 
 function renderGuestbookEntries(entries) {
@@ -666,8 +697,9 @@ function readSavedGarden() {
       }
       return { seed: item.seed, stage: item.stage };
     });
+    gardenCreatureLayout = normalizeCreatureLayout(saved.creatureLayout);
     saved.creatures.forEach((id) => {
-      if (Object.hasOwn(creatures, id)) discoveredCreatures.add(id);
+      if (validCreatureIds.has(id)) discoveredCreatures.add(id);
     });
   } catch (error) {
     plots = Array(5).fill(null);
@@ -698,7 +730,7 @@ function readSavedDreams() {
     }
     dreamJournal = (saved.dreamJournal || []).filter((entry) => entry && typeof entry.id === 'string'
       && typeof entry.wish === 'string' && entry.wish.trim() && entry.wish.length <= 250
-      && Object.hasOwn(creatures, entry.creature) && typeof entry.createdAt === 'string'
+      && validCreatureIds.has(entry.creature) && typeof entry.createdAt === 'string'
       && !Number.isNaN(Date.parse(entry.createdAt))).slice(-20);
     if (Array.isArray(saved.confirmedWishIds)) {
       saved.confirmedWishIds.forEach((id) => {
@@ -709,21 +741,31 @@ function readSavedDreams() {
       saved.pendingWishRemovalIds.forEach((id) => {
         if (typeof id === 'string' && id.length <= 64) pendingWishRemovalIds.add(id);
       });
+      if (Array.isArray(saved.pendingWishRemovalEntries)) {
+        saved.pendingWishRemovalEntries.forEach((entry) => {
+          if (entry && pendingWishRemovalIds.has(entry.id) && confirmedWishIds.has(entry.id)
+            && typeof entry.wish === 'string' && entry.wish.trim() && entry.wish.length <= 250
+            && validCreatureIds.has(entry.creature) && typeof entry.createdAt === 'string'
+            && !Number.isNaN(Date.parse(entry.createdAt))) {
+            pendingWishRemovalEntries.set(entry.id, entry);
+          }
+        });
+      }
       dreamJournal = dreamJournal.filter((entry) => !pendingWishRemovalIds.has(entry.id));
     }
     pendingReset = saved.resetRequested === true;
     plotDreamOwners = Array.from({ length: 5 }, (_, index) => {
       const owner = saved.plotOwners[index];
-      return plots[index] && Object.hasOwn(creatures, owner) ? owner : null;
+      return plots[index] && validCreatureIds.has(owner) ? owner : null;
     });
     saved.fulfilled.forEach((id) => {
       const hasMatchingBloom = plots.some((plot, index) => (
         plot
         && plot.stage === 2
-        && plot.seed === creatures[id]?.dreamSeed
+        && plot.seed === creatureInfo(id)?.dreamSeed
         && plotDreamOwners[index] === id
       ));
-      if (Object.hasOwn(creatures, id) && hasMatchingBloom) fulfilledDreams.add(id);
+      if (validCreatureIds.has(id) && hasMatchingBloom) fulfilledDreams.add(id);
     });
   } catch (error) {
     plotDreamOwners = Array(5).fill(null);
@@ -776,6 +818,269 @@ function saveGarden() {
   scheduleGardenSync();
 }
 
+function createFlowerIllustration(seedId, className) {
+  const seed = seeds[seedId];
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 44 44');
+  svg.setAttribute('class', className);
+  svg.setAttribute('aria-hidden', 'true');
+  const stem = document.createElementNS(svg.namespaceURI, 'path');
+  stem.setAttribute('class', 'garden-flower-illustration__stem');
+  stem.setAttribute('d', 'M22 42c-2-8 3-12 0-19');
+  stem.setAttribute('fill', 'none');
+  stem.setAttribute('stroke', '#79a985');
+  stem.setAttribute('stroke-width', '2.6');
+  stem.setAttribute('stroke-linecap', 'round');
+  svg.append(stem);
+  const leaf = document.createElementNS(svg.namespaceURI, 'path');
+  leaf.setAttribute('d', 'M21 34c-7-8-13-5-12 1 4 4 8 4 12-1m2-4c4-7 10-7 11-2-3 4-6 5-11 2');
+  leaf.setAttribute('fill', '#92bd89');
+  svg.append(leaf);
+  if (seedId === 'starfern') {
+    const fern = document.createElementNS(svg.namespaceURI, 'path');
+    fern.setAttribute('d', 'M22 24 15 14m7 13 9-13m-9 7 1-13m-8 7-4-1m20 0 4-2m-12 2-5-4m5 8 6-4');
+    fern.setAttribute('fill', 'none');
+    fern.setAttribute('stroke', seed.color);
+    fern.setAttribute('stroke-width', '2.8');
+    fern.setAttribute('stroke-linecap', 'round');
+    svg.append(fern);
+    return svg;
+  }
+  const petalCount = seedId === 'dreamrose' ? 9 : seedId === 'sunpocket' ? 10 : seedId === 'cloudbell' ? 5 : 6;
+  for (let index = 0; index < petalCount; index += 1) {
+    const petal = document.createElementNS(svg.namespaceURI, seedId === 'cloudbell' ? 'path' : 'ellipse');
+    if (seedId === 'cloudbell') {
+      petal.setAttribute('d', 'M22 7c-8 1-10 8-7 13 2 3 5 4 7 4s5-1 7-4c3-5 1-12-7-13z');
+      petal.setAttribute('transform', `rotate(${(index - 2) * 19} 22 17)`);
+      petal.setAttribute('fill', seed.color);
+      petal.setAttribute('stroke', '#f4e7ff');
+      petal.setAttribute('stroke-width', '.7');
+      svg.append(petal);
+      break;
+    }
+    petal.setAttribute('cx', '22');
+    petal.setAttribute('cy', seedId === 'dreamrose' && index > 4 ? '15' : '12');
+    petal.setAttribute('rx', seedId === 'sunpocket' ? '2.5' : seedId === 'dreamrose' ? '4.2' : '3.8');
+    petal.setAttribute('ry', seedId === 'sunpocket' ? '7' : seedId === 'dreamrose' ? '5.5' : '6.5');
+    petal.setAttribute('transform', `rotate(${index * (360 / petalCount)} 22 18)`);
+    petal.setAttribute('fill', seed.color);
+    petal.setAttribute('stroke', seedId === 'dreamrose' ? '#f4cf78' : 'rgba(255,255,255,.65)');
+    petal.setAttribute('stroke-width', '.55');
+    svg.append(petal);
+  }
+  const center = document.createElementNS(svg.namespaceURI, 'circle');
+  center.setAttribute('cx', '22');
+  center.setAttribute('cy', '18');
+  center.setAttribute('r', seedId === 'sunpocket' ? '3.2' : '2.7');
+  center.setAttribute('fill', '#f4cf78');
+  center.setAttribute('stroke', '#fff0c2');
+  center.setAttribute('stroke-width', '.8');
+  svg.append(center);
+  return svg;
+}
+
+function createGardenPlant(seedId) {
+  const plant = document.createElement('div');
+  plant.className = `garden-plant garden-plant--${seedId}`;
+  plant.setAttribute('aria-hidden', 'true');
+  const stem = document.createElement('span');
+  stem.className = 'garden-plant__stem';
+  const leftLeaf = document.createElement('span');
+  leftLeaf.className = 'garden-plant__leaf garden-plant__leaf--left';
+  const rightLeaf = document.createElement('span');
+  rightLeaf.className = 'garden-plant__leaf garden-plant__leaf--right';
+  const bloom = document.createElement('span');
+  bloom.className = 'garden-plant__bloom';
+  const petalCount = seedId === 'sunpocket' ? 8 : seedId === 'dreamrose' ? 10 : seedId === 'starfern' ? 4 : 6;
+  for (let index = 0; index < petalCount; index += 1) {
+    const petal = document.createElement('i');
+    petal.style.setProperty('--petal-index', String(index));
+    petal.style.setProperty('--petal-angle', `${index * (360 / petalCount)}deg`);
+    bloom.append(petal);
+  }
+  bloom.append(document.createElement('b'));
+  plant.append(stem, leftLeaf, rightLeaf, bloom);
+  return plant;
+}
+
+const defaultCreaturePositions = {
+  wide: {
+    moth: { x: 9, y: 40 }, snail: { x: 29, y: 43 }, rabbit: { x: 50, y: 40 },
+    fox: { x: 71, y: 43 }, bird: { x: 91, y: 40 },
+  },
+  narrow: {
+    moth: { x: 8, y: 20 }, snail: { x: 29, y: 21 }, rabbit: { x: 50, y: 19 },
+    fox: { x: 71, y: 21 }, bird: { x: 92, y: 20 },
+  },
+};
+
+function creaturePosition(id) {
+  const saved = gardenCreatureLayout[id];
+  const defaults = window.innerWidth <= 620 ? defaultCreaturePositions.narrow : defaultCreaturePositions.wide;
+  return saved || { ...defaults[id], scale: 1 };
+}
+
+function applyGardenCreatureLayout() {
+  document.querySelectorAll('.garden-creature').forEach((button) => {
+    const id = button.dataset.creature;
+    const position = clampCreaturePosition(button, creaturePosition(id));
+    if (gardenCreatureLayout[id]) gardenCreatureLayout[id] = position;
+    button.style.setProperty('--creature-x', `${position.x}%`);
+    button.style.setProperty('--creature-y', `${position.y}%`);
+    button.style.setProperty('--creature-scale', String(position.scale));
+  });
+}
+
+function clampCreaturePosition(button, position) {
+  const sceneRect = document.querySelector('#gardenScene').getBoundingClientRect();
+  const scale = Math.min(1.5, Math.max(0.65, position.scale));
+  const halfWidth = (button.offsetWidth * scale / 2 / sceneRect.width) * 100;
+  const halfHeight = (button.offsetHeight * scale / 2 / sceneRect.height) * 100;
+  return {
+    x: Math.min(100 - halfWidth, Math.max(halfWidth, position.x)),
+    y: Math.min(100 - halfHeight, Math.max(halfHeight, position.y)),
+    scale,
+  };
+}
+
+function setCreaturePosition(button, position) {
+  const normalized = clampCreaturePosition(button, position);
+  gardenCreatureLayout[button.dataset.creature] = normalized;
+  button.style.setProperty('--creature-x', `${normalized.x}%`);
+  button.style.setProperty('--creature-y', `${normalized.y}%`);
+  button.style.setProperty('--creature-scale', String(normalized.scale));
+}
+
+function persistCreatureLayout() {
+  gardenChangeVersion += 1;
+  saveGarden();
+}
+
+function installCreatureGestures(button) {
+  const pointers = new Map();
+  let gesture = null;
+  let suppressClickUntil = 0;
+
+  const pointDistance = (first, second) => Math.hypot(first.x - second.x, first.y - second.y);
+  const persistIfChanged = () => {
+    if (!gesture?.changed) return;
+    button.classList.remove('is-manipulating');
+    suppressClickUntil = Date.now() + 350;
+    persistCreatureLayout();
+  };
+  const beginPointer = (event) => {
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    const position = creaturePosition(button.dataset.creature);
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (pointers.size === 1) {
+      gesture = {
+        mode: 'pending',
+        startX: event.clientX,
+        startY: event.clientY,
+        startPosition: { ...position },
+        changed: false,
+      };
+    } else if (pointers.size === 2) {
+      const [first, second] = [...pointers.values()];
+      gesture = {
+        mode: 'pinch',
+        startDistance: pointDistance(first, second),
+        startScale: position.scale,
+        startPosition: { ...position },
+        changed: false,
+      };
+      button.classList.add('is-manipulating');
+    }
+    button.setPointerCapture(event.pointerId);
+  };
+
+  button.addEventListener('pointerdown', beginPointer);
+  button.addEventListener('pointermove', (event) => {
+    if (!pointers.has(event.pointerId) || !gesture) return;
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (pointers.size > 1 && gesture.mode === 'pinch') {
+      const [first, second] = [...pointers.values()];
+      const distance = pointDistance(first, second);
+      if (gesture.startDistance > 0) {
+        setCreaturePosition(button, {
+          ...gesture.startPosition,
+          scale: gesture.startScale * distance / gesture.startDistance,
+        });
+        gesture.changed = true;
+        event.preventDefault();
+      }
+      return;
+    }
+    if (gesture.mode === 'pending'
+      && Math.hypot(event.clientX - gesture.startX, event.clientY - gesture.startY) >= 5) {
+      gesture.mode = 'drag';
+      button.classList.add('is-manipulating');
+    }
+    if (gesture.mode === 'drag') {
+      const sceneRect = document.querySelector('#gardenScene').getBoundingClientRect();
+      setCreaturePosition(button, {
+        ...gesture.startPosition,
+        x: gesture.startPosition.x + (event.clientX - gesture.startX) / sceneRect.width * 100,
+        y: gesture.startPosition.y + (event.clientY - gesture.startY) / sceneRect.height * 100,
+      });
+      gesture.changed = true;
+      event.preventDefault();
+    }
+  });
+  const finishPointer = (event) => {
+    if (!pointers.has(event.pointerId)) return;
+    pointers.delete(event.pointerId);
+    if (pointers.size === 1 && gesture?.mode === 'pinch') {
+      const [, point] = [...pointers.entries()][0];
+      gesture = {
+        mode: 'pending',
+        startX: point.x,
+        startY: point.y,
+        startPosition: { ...creaturePosition(button.dataset.creature) },
+        changed: gesture.changed,
+      };
+      return;
+    }
+    if (pointers.size === 0) {
+      persistIfChanged();
+      gesture = null;
+    }
+  };
+  button.addEventListener('pointerup', finishPointer);
+  button.addEventListener('pointercancel', finishPointer);
+  button.addEventListener('lostpointercapture', finishPointer);
+
+  button.addEventListener('wheel', (event) => {
+    if (!event.ctrlKey) return;
+    event.preventDefault();
+    const current = creaturePosition(button.dataset.creature);
+    setCreaturePosition(button, { ...current, scale: current.scale * (event.deltaY < 0 ? 1.08 : 0.92) });
+    persistCreatureLayout();
+  }, { passive: false });
+
+  button.addEventListener('keydown', (event) => {
+    if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', '+', '=', '-', 'Subtract', 'Add'].includes(event.key)) return;
+    event.preventDefault();
+    const current = creaturePosition(button.dataset.creature);
+    const step = event.shiftKey ? 5 : 2;
+    const next = { ...current };
+    if (event.key === 'ArrowUp') next.y -= step;
+    else if (event.key === 'ArrowDown') next.y += step;
+    else if (event.key === 'ArrowLeft') next.x -= step;
+    else if (event.key === 'ArrowRight') next.x += step;
+    else next.scale *= ['+', '=', 'Add'].includes(event.key) ? 1.08 : 0.92;
+    setCreaturePosition(button, next);
+    persistCreatureLayout();
+  });
+
+  button.addEventListener('click', (event) => {
+    if (Date.now() < suppressClickUntil) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }
+  }, true);
+}
+
 function renderPlots() {
   plotRoot.replaceChildren();
   plots.forEach((plot, index) => {
@@ -795,17 +1100,13 @@ function renderPlots() {
     card.classList.add(`is-stage-${plot.stage}`);
     const dreamOwner = plotDreamOwners[index];
     const dreamFulfilled = dreamOwner
-      && seed.id === creatures[dreamOwner].dreamSeed
+      && seed.id === creatureInfo(dreamOwner).dreamSeed
       && fulfilledDreams.has(dreamOwner);
     if (dreamFulfilled) {
       card.classList.add('garden-plot--dream-fulfilled');
-      card.setAttribute('aria-label', `Garden plot ${index + 1}, ${seed.name}, dream fulfilled for ${creatures[dreamOwner].name}`);
+      card.setAttribute('aria-label', `Garden plot ${index + 1}, ${seed.name}, dream fulfilled for ${creatureInfo(dreamOwner).name}`);
     }
-    const plant = document.createElement('div');
-    plant.className = 'garden-plant';
-    plant.setAttribute('aria-hidden', 'true');
-    plant.innerHTML = '<span class="garden-plant__stem"></span><span class="garden-plant__leaf garden-plant__leaf--left"></span><span class="garden-plant__leaf garden-plant__leaf--right"></span><span class="garden-plant__bloom"><i></i><i></i><i></i><i></i><i></i><b></b></span>';
-    card.append(plant);
+    card.append(createGardenPlant(seed.id));
 
     const name = document.createElement('span');
     name.className = 'garden-plot__name';
@@ -829,12 +1130,12 @@ function renderPlots() {
         const owner = plotDreamOwners[index];
         const fulfillsDream = plots[index].stage === 2
           && owner
-          && seed.id === creatures[owner].dreamSeed
+          && seed.id === creatureInfo(owner).dreamSeed
           && !fulfilledDreams.has(owner);
         window.DearPipSounds?.play(plots[index].stage === 2 ? 'garden-harvest' : 'garden-water');
         if (fulfillsDream) {
           fulfilledDreams.add(owner);
-          feedback.textContent = `${creatures[owner].name}'s dream came true! Pip's ${seed.name} helped make the garden kinder.`;
+          feedback.textContent = `${creatureInfo(owner).name}'s dream came true! Pip's ${seed.name} helped make the garden kinder.`;
         } else {
           feedback.textContent = plots[index].stage === 2
             ? `${seed.name} opened into a little dream flower.`
@@ -867,13 +1168,16 @@ function renderJournal(root, entries, emptyMessage) {
 }
 
 function render() {
+  applyGardenCreatureLayout();
+  gardenResetButton.disabled = !gardenSyncReady || !gardenSessionReady || gardenSyncPending;
   renderPlots();
   const planted = plots.filter(Boolean);
   flowerCount.textContent = String(planted.length);
-  creatureCount.textContent = String(discoveredCreatures.size);
+  const wishFriends = [...new Set(dreamJournal.map((entry) => entry.creature))];
+  creatureCount.textContent = String(wishFriends.length);
   renderJournal(flowerJournal, planted.map((plot) => `${seeds[plot.seed].name} · ${['seed', 'sprout', 'bloom'][plot.stage]}`), 'No flowers planted yet.');
-  renderJournal(creatureJournal, [...discoveredCreatures].map((id) => creatures[id].name), 'No friends found yet.');
-  renderJournal(fulfilledDreamJournal, [...fulfilledDreams].map((id) => `${creatures[id].name} · dream fulfilled`), 'No dreams fulfilled yet.');
+  renderJournal(creatureJournal, wishFriends.map((id) => creatureInfo(id).name), 'Your wish friends will appear here after you save a wish with them.');
+  renderJournal(fulfilledDreamJournal, [...fulfilledDreams].map((id) => `${creatureInfo(id).name} · dream fulfilled`), 'No dreams fulfilled yet.');
   renderPrivateDreams();
   renderWishStars();
   plantButton.disabled = !selectedSeed || !plots.includes(null);
@@ -894,7 +1198,13 @@ function hashWishId(id) {
 }
 
 function renderWishStars() {
-  const confirmedEntries = dreamJournal.filter((entry) => confirmedWishIds.has(entry.id));
+  const activeEntries = new Map(dreamJournal
+    .filter((entry) => confirmedWishIds.has(entry.id))
+    .map((entry) => [entry.id, entry]));
+  pendingWishRemovalEntries.forEach((entry, id) => {
+    if (confirmedWishIds.has(id)) activeEntries.set(id, entry);
+  });
+  const confirmedEntries = [...activeEntries.values()];
   const activeIds = new Set(confirmedEntries.map((entry) => entry.id));
   const existingStars = new Map([...wishStarRoot.children].map((star) => [star.dataset.wishId, star]));
 
@@ -943,7 +1253,7 @@ function renderWishStars() {
     star.className = 'garden-wish-star';
     star.type = 'button';
     star.dataset.wishId = entry.id;
-    star.setAttribute('aria-label', `Open saved dream details for ${creatures[entry.creature].name}`);
+    star.setAttribute('aria-label', `Open saved dream details for ${creatureInfo(entry.creature).name}`);
     star.setAttribute('aria-controls', 'gardenWishDetail');
     star.setAttribute('aria-expanded', String(activeWishDetailsId === entry.id));
     star.textContent = '✦';
@@ -956,8 +1266,8 @@ function renderWishStars() {
 
 function openWishDetails(id, trigger) {
   if (!confirmedWishIds.has(id)) return;
-  const entry = dreamJournal.find((wish) => wish.id === id);
-  if (!entry || !Object.hasOwn(creatures, entry.creature)) return;
+  const entry = dreamJournal.find((wish) => wish.id === id) || pendingWishRemovalEntries.get(id);
+  if (!entry || !creatureInfo(entry.creature)) return;
 
   if (activeWishDetailsId && activeWishDetailsId !== id) {
     wishStarRoot.querySelector(`[data-wish-id="${CSS.escape(activeWishDetailsId)}"]`)
@@ -966,12 +1276,12 @@ function openWishDetails(id, trigger) {
   activeWishDetailsId = id;
   wishDetailsReturnFocus = trigger;
   wishDetailDream.textContent = entry.wish;
-  const creature = creatures[entry.creature];
+  const creature = creatureInfo(entry.creature);
   wishDetailIcon.hidden = !creature.image;
   if (creature.image) wishDetailIcon.src = creature.image;
   wishDetailEmoji.hidden = Boolean(creature.image);
   wishDetailEmoji.textContent = creature.icon || '';
-  wishDetailAnimal.textContent = creatures[entry.creature].name;
+  wishDetailAnimal.textContent = creature.name;
 
   const savedDate = new Date(entry.createdAt);
   if (!Number.isNaN(savedDate.getTime())) {
@@ -1104,9 +1414,10 @@ function renderPrivateDreams() {
     wish.textContent = entry.wish;
     const status = document.createElement('small');
     const planted = plots.some((plot, index) => plot && plotDreamOwners[index] === entry.creature);
-    status.textContent = fulfilledDreams.has(entry.creature) ? `${creatures[entry.creature].name} · garden bloom fulfilled`
-      : planted ? `${creatures[entry.creature].name} · collected, growing in the garden`
-        : `${creatures[entry.creature].name} · awaiting collection`;
+    const creature = creatureInfo(entry.creature);
+    status.textContent = fulfilledDreams.has(entry.creature) ? `${creature.name} · garden bloom fulfilled`
+      : planted ? `${creature.name} · collected, growing in the garden`
+        : `${creature.name} · awaiting collection`;
     const date = document.createElement('time');
     const parsedDate = new Date(entry.createdAt);
     if (!Number.isNaN(parsedDate.getTime())) {
@@ -1117,7 +1428,7 @@ function renderPrivateDreams() {
     remove.className = 'garden-private-wish-remove';
     remove.type = 'button';
     remove.textContent = 'Remove wish';
-    remove.setAttribute('aria-label', `Remove your wish for ${creatures[entry.creature].name}`);
+    remove.setAttribute('aria-label', `Remove your wish for ${creature.name}`);
     remove.disabled = !gardenSyncReady || gardenSyncPending;
     remove.addEventListener('click', () => removePrivateWish(entry.id));
     item.append(wish, status, date, remove);
@@ -1128,10 +1439,11 @@ function renderPrivateDreams() {
 async function removePrivateWish(id) {
   if (!gardenSyncReady || !gardenSessionReady || gardenSyncPending || pendingWishRemovalIds.has(id)) return;
   const entry = dreamJournal.find((wish) => wish.id === id);
-  if (!entry || !window.confirm(`Remove this private wish for ${creatures[entry.creature].name} and its saved star?`)) return;
+  if (!entry || !window.confirm(`Remove this private wish for ${creatureInfo(entry.creature).name} and its saved star?`)) return;
 
   const previousJournal = [...dreamJournal];
   pendingWishRemovalIds.add(id);
+  if (confirmedWishIds.has(id)) pendingWishRemovalEntries.set(id, entry);
   dreamJournal = dreamJournal.filter((wish) => wish.id !== id);
   gardenChangeVersion += 1;
   const removalVersion = gardenChangeVersion;
@@ -1150,6 +1462,7 @@ async function removePrivateWish(id) {
 
   dreamJournal = previousJournal;
   pendingWishRemovalIds.delete(id);
+  pendingWishRemovalEntries.delete(id);
   gardenChangeVersion += 1;
   storeGardenStateLocally(gardenStateSnapshot());
   render();
@@ -1230,7 +1543,7 @@ Object.entries(seeds).forEach(([id, seed]) => {
   const swatch = document.createElement('span');
   swatch.className = 'garden-seed__swatch';
   swatch.setAttribute('aria-hidden', 'true');
-  swatch.textContent = seed.mark;
+  swatch.append(createFlowerIllustration(id, 'garden-flower-illustration'));
   const name = document.createElement('strong');
   name.textContent = seed.name;
   const description = document.createElement('span');
@@ -1263,6 +1576,7 @@ plantButton.addEventListener('click', () => {
 });
 
 document.querySelectorAll('.garden-creature').forEach((button) => {
+  installCreatureGestures(button);
   button.addEventListener('click', () => {
     const id = button.dataset.creature;
     const creature = creatures[id];
@@ -1304,10 +1618,34 @@ document.querySelectorAll('.garden-creature').forEach((button) => {
   });
 });
 
-document.querySelector('#gardenReset').addEventListener('click', () => {
+gardenResetButton.addEventListener('click', async () => {
+  if (!gardenSyncReady || !gardenSessionReady || gardenSyncPending) {
+    privateDreamStatus.textContent = 'Wait until your garden is connected and saved before resetting it.';
+    return;
+  }
   if (!window.confirm('Start a fresh garden? This will clear planted seeds, discovered friends, and all private wishes.')) return;
+  const previous = {
+    plots: plots.map((plot) => plot ? { ...plot } : null),
+    plotOwners: [...plotDreamOwners],
+    creatures: [...discoveredCreatures],
+    fulfilled: [...fulfilledDreams],
+    journal: [...dreamJournal],
+    layout: Object.fromEntries(Object.entries(gardenCreatureLayout).map(([id, position]) => [id, { ...position }])),
+    confirmedWishIds: [...confirmedWishIds],
+    pendingWishRemovalIds: [...pendingWishRemovalIds],
+    pendingWishRemovalEntries: [...pendingWishRemovalEntries],
+    selectedSeed,
+    selectedCreatureId,
+    storageAvailable,
+    dreamStorageAvailable,
+    localGardenDataInvalid,
+    localDreamDataInvalid,
+  };
   pendingReset = true;
-  dreamJournal.forEach((entry) => pendingWishRemovalIds.add(entry.id));
+  dreamJournal.forEach((entry) => {
+    pendingWishRemovalIds.add(entry.id);
+    if (confirmedWishIds.has(entry.id)) pendingWishRemovalEntries.set(entry.id, entry);
+  });
   gardenChangeVersion += 1;
   gardenSyncPending = true;
   localGardenDataInvalid = false;
@@ -1319,6 +1657,7 @@ document.querySelector('#gardenReset').addEventListener('click', () => {
   discoveredCreatures.clear();
   fulfilledDreams.clear();
   dreamJournal = [];
+  gardenCreatureLayout = {};
   selectedSeed = null;
   selectedCreatureId = null;
   seedRoot.querySelectorAll('.garden-seed').forEach((button) => {
@@ -1332,11 +1671,55 @@ document.querySelector('#gardenReset').addEventListener('click', () => {
     const creature = creatures[button.dataset.creature];
     button.setAttribute('aria-label', `Discover ${creature.name}${creature.title ? `, ${creature.title}` : ''}`);
   });
+  applyGardenCreatureLayout();
   feedback.textContent = 'The garden is ready for new little dreams.';
+  privateDreamStatus.textContent = 'Resetting this garden…';
   saveGarden();
   saveDreams();
   render();
+  const resetVersion = gardenChangeVersion;
+  gardenResetButton.disabled = true;
+  window.clearTimeout(gardenSyncTimer);
+  gardenSyncChain = gardenSyncChain.then(syncGardenState, syncGardenState);
+  await gardenSyncChain;
+  if (gardenPersistedVersion >= resetVersion) {
+    privateDreamStatus.textContent = 'Your garden reset was saved.';
+    return;
+  }
+
+  window.clearTimeout(gardenSyncRetryTimer);
+  pendingReset = false;
+  plots = previous.plots;
+  plotDreamOwners = previous.plotOwners;
+  discoveredCreatures.clear();
+  previous.creatures.forEach((id) => discoveredCreatures.add(id));
+  fulfilledDreams.clear();
+  previous.fulfilled.forEach((id) => fulfilledDreams.add(id));
+  dreamJournal = previous.journal;
+  gardenCreatureLayout = previous.layout;
+  confirmedWishIds.clear();
+  previous.confirmedWishIds.forEach((id) => confirmedWishIds.add(id));
+  pendingWishRemovalIds.clear();
+  previous.pendingWishRemovalIds.forEach((id) => pendingWishRemovalIds.add(id));
+  pendingWishRemovalEntries.clear();
+  previous.pendingWishRemovalEntries.forEach(([id, entry]) => pendingWishRemovalEntries.set(id, entry));
+  selectedSeed = previous.selectedSeed;
+  selectedCreatureId = previous.selectedCreatureId;
+  storageAvailable = previous.storageAvailable;
+  dreamStorageAvailable = previous.dreamStorageAvailable;
+  localGardenDataInvalid = previous.localGardenDataInvalid;
+  localDreamDataInvalid = previous.localDreamDataInvalid;
+  gardenChangeVersion += 1;
+  gardenSyncPending = false;
+  gardenResetButton.disabled = false;
+  storeGardenStateLocally(gardenStateSnapshot());
+  persistWishSyncMetadata();
+  render();
+  setSyncStatus('Reset failed — your previous saved garden has been restored.', 'offline');
+  privateDreamStatus.textContent = 'The reset could not be saved. Your previous garden has been restored.';
 });
+
+window.addEventListener('resize', () => window.requestAnimationFrame(applyGardenCreatureLayout));
 
 readSavedGarden();
 readSavedDreams();

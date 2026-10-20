@@ -137,6 +137,9 @@ class PostgreSQLApiIntegrationTests(unittest.TestCase):
             "creatures": [],
             "plotOwners": [None] * 5,
             "fulfilled": [],
+            "creatureLayout": {
+                "moth": {"x": 28.5, "y": 38, "scale": 1.15},
+            },
         }
         path = "/api/garden/state"
 

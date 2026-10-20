@@ -5184,7 +5184,7 @@ html[data-mood="dawn"] .atlas-page :focus-visible {
   position: absolute;
   right: 10%;
   bottom: 4%;
-  left: 19%;
+  left: 10%;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   align-items: end;
@@ -5294,43 +5294,42 @@ html[data-mood="dawn"] .atlas-page :focus-visible {
 
 .garden-plant__bloom {
   position: absolute;
-  bottom: 42%;
+  bottom: 48%;
   left: 50%;
-  width: 36px;
-  height: 36px;
+  width: 42px;
+  height: 42px;
   opacity: 0;
-  transform: translate(-50%, 8px) scale(0.35);
-  transition: opacity 500ms ease, transform 600ms cubic-bezier(.2, .8, .2, 1);
+  transform: translate(-50%, 8px) scale(.35);
+  transform-origin: center bottom;
 }
 
 .garden-plant__bloom i {
   position: absolute;
-  top: 2px;
-  left: 14px;
-  width: 12px;
-  height: 20px;
-  border-radius: 80% 80% 48% 48%;
-  background: var(--flower-color);
-  box-shadow: 0 0 12px color-mix(in srgb, var(--flower-color), transparent 30%);
-  transform-origin: 50% 16px;
+  top: 20px;
+  left: 17px;
+  width: 9px;
+  height: 17px;
+  border: 1px solid rgba(255, 248, 241, .6);
+  border-radius: 80% 80% 45% 45%;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--flower-color), white 32%), var(--flower-color) 70%);
+  box-shadow: 0 0 9px color-mix(in srgb, var(--flower-color), transparent 40%);
+  transform: rotate(var(--petal-angle)) translateY(-10px) scaleY(.15);
+  transform-origin: 50% 9px;
+  opacity: 0;
 }
-
-.garden-plant__bloom i:nth-child(1) { transform: rotate(0deg); }
-.garden-plant__bloom i:nth-child(2) { transform: rotate(72deg); }
-.garden-plant__bloom i:nth-child(3) { transform: rotate(144deg); }
-.garden-plant__bloom i:nth-child(4) { transform: rotate(216deg); }
-.garden-plant__bloom i:nth-child(5) { transform: rotate(288deg); }
 
 .garden-plant__bloom b {
   position: absolute;
-  top: 13px;
-  left: 13px;
-  width: 10px;
-  height: 10px;
+  top: 17px;
+  left: 16px;
+  width: 11px;
+  height: 11px;
   border: 1px solid rgba(255, 245, 197, 0.9);
   border-radius: 50%;
-  background: #f4cf78;
-  box-shadow: 0 0 10px #ffe8a6;
+  background: radial-gradient(circle at 35% 30%, #fff5c9, #f4cf78 70%);
+  box-shadow: 0 0 10px #ffe8a6, inset 0 0 0 2px rgba(198, 132, 60, .28);
+  scale: 0;
+  opacity: 0;
 }
 
 .garden-plot.is-stage-0 .garden-plant__stem {
@@ -5342,15 +5341,17 @@ html[data-mood="dawn"] .atlas-page :focus-visible {
 }
 
 .garden-plot.is-stage-1 .garden-plant__stem {
-  height: 37%;
+  height: 43%;
+  animation: garden-sprout-rise 650ms cubic-bezier(.18,.8,.3,1) both;
 }
 
 .garden-plot.is-stage-1 .garden-plant__leaf {
   opacity: 1;
+  animation: garden-leaf-unfurl 500ms 180ms cubic-bezier(.2,.8,.3,1) both;
 }
 
 .garden-plot.is-stage-2 .garden-plant__stem {
-  height: 70%;
+  height: 75%;
 }
 
 .garden-plot.is-stage-2 .garden-plant__leaf {
@@ -5360,7 +5361,43 @@ html[data-mood="dawn"] .atlas-page :focus-visible {
 .garden-plot.is-stage-2 .garden-plant__bloom {
   opacity: 1;
   transform: translate(-50%, 0) scale(1);
-  animation: garden-bloom-sway 3.5s ease-in-out infinite alternate;
+  animation: garden-head-open 520ms cubic-bezier(.18,.8,.3,1) both, garden-bloom-sway 5s 520ms ease-in-out infinite alternate;
+}
+
+.garden-plot.is-stage-2 .garden-plant__bloom i {
+  animation: garden-petal-unfurl 560ms calc(180ms + var(--petal-index) * 65ms) cubic-bezier(.18,.8,.3,1) both;
+}
+
+.garden-plot.is-stage-2 .garden-plant__bloom b {
+  animation: garden-center-appear 400ms 600ms cubic-bezier(.18,.8,.3,1) both;
+}
+
+.garden-plant--sunpocket .garden-plant__bloom i {
+  width: 7px;
+  height: 19px;
+  left: 18px;
+  border-radius: 90% 90% 30% 30%;
+  background: linear-gradient(145deg, #fff0aa, #f4bf4e 75%);
+}
+
+.garden-plant--cloudbell .garden-plant__bloom i {
+  height: 15px;
+  border-radius: 55% 55% 65% 65%;
+  background: linear-gradient(145deg, #eadbff, #ae8bd7 75%);
+}
+
+.garden-plant--starfern .garden-plant__bloom i {
+  width: 7px;
+  height: 18px;
+  left: 18px;
+  border: 1px solid rgba(239, 255, 218, .7);
+  border-radius: 100% 0 100% 0;
+  background: linear-gradient(145deg, #d5efb0, #79ae78 75%);
+}
+
+.garden-plant--dreamrose .garden-plant__bloom i:nth-child(n+6) {
+  background: linear-gradient(145deg, #f9d2de, #d86d9c 75%);
+  scale: .78;
 }
 
 .garden-water {
@@ -5390,75 +5427,68 @@ html[data-mood="dawn"] .atlas-page :focus-visible {
 .garden-creature {
   position: absolute;
   display: grid;
-  width: 48px;
-  height: 50px;
+  top: var(--creature-y, 40%);
+  left: var(--creature-x, 50%);
+  width: clamp(52px, 6vw, 78px);
+  height: clamp(48px, 5.5vw, 72px);
   place-items: center;
-  border: 1px solid rgba(255, 232, 166, 0.5);
-  border-radius: 50%;
-  color: #ffe8a6;
-  background: rgba(36, 31, 59, 0.74);
-  box-shadow: 0 0 18px rgba(255, 223, 149, 0.22);
-  font: 24px/1 var(--serif);
-  cursor: pointer;
+  padding: 0;
+  border: 0;
+  border-radius: 16px;
+  background: transparent;
+  cursor: grab;
   pointer-events: auto;
-  transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  transform: translate(-50%, -50%);
+  transition: filter 180ms ease;
+}
+
+.garden-creature__float {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  transform: scale(var(--creature-scale, 1));
+  transform-origin: center;
   animation: garden-creature-float 3.6s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+.garden-creature__art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 5px 9px rgba(14, 10, 30, .42));
+  -webkit-user-drag: none;
 }
 
 .garden-creature:hover,
 .garden-creature.is-discovered,
 .garden-creature.is-selected {
-  background: rgba(103, 78, 105, 0.94);
-  box-shadow: 0 0 26px rgba(255, 223, 149, 0.58);
-  transform: scale(1.1);
+  filter: drop-shadow(0 0 8px rgba(255, 223, 149, .78));
 }
 
-.garden-creature.is-selected {
-  outline: none;
+.garden-creature.is-manipulating {
+  z-index: 8;
+  cursor: grabbing;
+  filter: drop-shadow(0 0 12px rgba(255, 232, 166, .95));
 }
 
-.garden-creature--moth { top: 40%; left: 8%; }
-.garden-creature--snail { top: 41%; left: 24%; animation-delay: -1.2s; }
-.garden-creature--sprite { top: 39%; left: 40%; animation-delay: -2.2s; }
-.garden-creature--rabbit { top: 41%; left: 56%; animation-delay: -0.6s; }
-.garden-creature--fox { top: 40%; left: 72%; animation-delay: -1.8s; }
-.garden-creature--bird { top: 39%; right: 8%; animation-delay: -2.8s; }
-
-.garden-creature--sprite {
-  width: 54px;
-  height: 62px;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-}
-
-.garden-creature--sprite:hover,
-.garden-creature--sprite.is-discovered,
-.garden-creature--sprite.is-selected {
-  background: transparent;
-  box-shadow: none;
-}
-
-.garden-creature__dewdrop {
-  width: 28px;
-  height: 36px;
-  fill: #a7d7e7;
-  stroke: #ffe8a6;
-  stroke-width: 1.5px;
-  filter: drop-shadow(0 4px 8px rgba(10, 9, 28, .4));
-  transition: filter 180ms ease;
-}
-
-.garden-creature--sprite:hover .garden-creature__dewdrop,
-.garden-creature--sprite.is-selected .garden-creature__dewdrop {
-  filter: drop-shadow(0 0 10px rgba(255, 232, 166, .85));
+.garden-creature:focus-visible {
+  z-index: 9;
+  outline: 2px solid #fff0b3;
+  outline-offset: 3px;
+  filter: drop-shadow(0 0 8px rgba(255, 232, 166, .9));
 }
 
 .garden-scene-hint {
   position: absolute;
   right: 16px;
   bottom: 10px;
+  max-width: 44%;
   margin: 0;
   color: rgba(255, 248, 241, 0.75);
   font: 8px/1.4 var(--mono);
@@ -5530,9 +5560,17 @@ html[data-mood="dawn"] .atlas-page :focus-visible {
 .garden-workbench {
   display: grid;
   grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
+  grid-auto-rows: min-content;
   align-items: start;
+  height: fit-content;
   gap: 18px;
   margin-top: 18px;
+}
+
+.garden-workbench > .garden-seeds,
+.garden-workbench > .garden-journal {
+  align-self: start;
+  min-height: 0;
 }
 
 .garden-seeds,
@@ -5612,6 +5650,22 @@ html[data-mood="dawn"] .atlas-page :focus-visible {
   background: color-mix(in srgb, var(--seed-color), #211e3d 84%);
   box-shadow: 0 0 15px color-mix(in srgb, var(--seed-color), transparent 75%);
   font-size: 19px;
+}
+
+.garden-flower-illustration {
+  display: block;
+  width: 38px;
+  height: 38px;
+  overflow: visible;
+}
+
+.garden-seed__swatch .garden-flower-illustration {
+  width: 35px;
+  height: 35px;
+}
+
+.garden-flower-illustration__stem {
+  filter: drop-shadow(0 1px 1px rgba(10, 24, 16, .25));
 }
 
 .garden-seed strong {
@@ -5900,6 +5954,31 @@ html[data-mood="dawn"] .atlas-page :focus-visible {
   to { rotate: 5deg; }
 }
 
+@keyframes garden-sprout-rise {
+  from { scale: 1 0.12; }
+  to { scale: 1 1; }
+}
+
+@keyframes garden-leaf-unfurl {
+  from { opacity: 0; scale: .2; }
+  to { opacity: 1; scale: 1; }
+}
+
+@keyframes garden-head-open {
+  from { opacity: 0; translate: 0 8px; scale: .3; }
+  to { opacity: 1; translate: 0 0; scale: 1; }
+}
+
+@keyframes garden-petal-unfurl {
+  from { opacity: 0; transform: rotate(var(--petal-angle)) translateY(-4px) scaleY(.1); }
+  to { opacity: 1; transform: rotate(var(--petal-angle)) translateY(-10px) scaleY(1); }
+}
+
+@keyframes garden-center-appear {
+  from { opacity: 0; scale: 0; }
+  to { opacity: 1; scale: 1; }
+}
+
 @keyframes garden-creature-float {
   from { translate: 0 0; }
   to { translate: 0 -5px; }
@@ -5949,7 +6028,7 @@ html[data-mood="dawn"] .atlas-page :focus-visible {
   .garden-plots {
     right: 5%;
     bottom: 7%;
-    left: 13%;
+    left: 5%;
     gap: 5px;
   }
 
@@ -5962,6 +6041,10 @@ html[data-mood="dawn"] .atlas-page :focus-visible {
   .garden-plant {
     width: 38px;
     height: 22px;
+  }
+
+  .garden-plot.is-stage-2 .garden-plant {
+    height: 32px;
   }
 
   .garden-plant__bloom {
@@ -5978,30 +6061,8 @@ html[data-mood="dawn"] .atlas-page :focus-visible {
   }
 
   .garden-creature {
-    width: 35px;
-    height: 37px;
-    font-size: 19px;
-  }
-
-  .garden-creature--moth { top: 20%; left: 3%; }
-  .garden-creature--snail { top: 21%; left: 21%; }
-  .garden-creature--sprite { top: 19%; left: 39%; }
-  .garden-creature--rabbit { top: 21%; left: 57%; }
-  .garden-creature--fox { top: 20%; left: 75%; }
-  .garden-creature--bird { top: 19%; right: 3%; }
-
-  .garden-creature--moth,
-  .garden-creature--snail,
-  .garden-creature--rabbit,
-  .garden-creature--fox,
-  .garden-creature--bird {
     width: clamp(40px, 12vw, 56px);
-    height: clamp(36px, 11vw, 52px);
-  }
-
-  .garden-creature--sprite {
-    width: clamp(38px, 11vw, 52px);
-    height: clamp(42px, 12vw, 56px);
+    height: clamp(38px, 11vw, 52px);
   }
 
   .garden-scene-hint {
@@ -9788,24 +9849,9 @@ html[data-mood="dawn"] .garden-page .garden-reset {
 }
 
 @media (max-width: 620px) {
-  .garden-creature--moth,
-  .garden-creature--snail,
-  .garden-creature--rabbit,
-  .garden-creature--fox,
-  .garden-creature--bird {
+  .garden-creature {
     width: clamp(40px, 12vw, 56px);
     height: clamp(36px, 11vw, 52px);
-  }
-
-  .garden-creature--moth { top: 20%; left: 3%; }
-  .garden-creature--snail { top: 21%; left: 21%; }
-  .garden-creature--sprite { top: 19%; left: 39%; }
-  .garden-creature--rabbit { top: 21%; left: 57%; }
-  .garden-creature--fox { top: 20%; left: 75%; }
-  .garden-creature--bird { top: 19%; right: 3%; }
-  .garden-creature--sprite {
-    width: clamp(38px, 11vw, 52px);
-    height: clamp(42px, 12vw, 56px);
   }
 
   .garden-guardian-profile {

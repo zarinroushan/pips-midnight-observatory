@@ -118,26 +118,23 @@
       <div class="garden-plots" id="gardenPlots" aria-label="Garden planting plots"></div>
 
       <div class="garden-creatures" aria-label="Hidden garden friends">
-        <button class="garden-creature garden-creature--moth" type="button" data-creature="moth" aria-label="Discover Lumi, Guardian of Hope" aria-controls="gardenDreamPanel" aria-pressed="false">
-          <img class="garden-creature__art" src="assets/garden-animals/Lumi.png" alt="" aria-hidden="true">
+        <button class="garden-creature garden-creature--moth" type="button" data-creature="moth" aria-label="Discover Lumi, Guardian of Hope" aria-description="Drag to move. Hold Control while scrolling to resize; use arrow keys to move and plus or minus to resize." aria-controls="gardenDreamPanel" aria-pressed="false">
+          <span class="garden-creature__float" aria-hidden="true"><img class="garden-creature__art" src="assets/garden-animals/Lumi.png" alt=""></span>
         </button>
-        <button class="garden-creature garden-creature--snail" type="button" data-creature="snail" aria-label="Discover Nova, Guardian of Patience" aria-controls="gardenDreamPanel" aria-pressed="false">
-          <img class="garden-creature__art" src="assets/garden-animals/Nova.png" alt="" aria-hidden="true">
+        <button class="garden-creature garden-creature--snail" type="button" data-creature="snail" aria-label="Discover Nova, Guardian of Patience" aria-description="Drag to move. Hold Control while scrolling to resize; use arrow keys to move and plus or minus to resize." aria-controls="gardenDreamPanel" aria-pressed="false">
+          <span class="garden-creature__float" aria-hidden="true"><img class="garden-creature__art" src="assets/garden-animals/Nova.png" alt=""></span>
         </button>
-        <button class="garden-creature garden-creature--sprite" type="button" data-creature="sprite" aria-label="Discover the Dewdrop Sprite" aria-controls="gardenDreamPanel" aria-pressed="false">
-          <svg class="garden-creature__dewdrop" viewBox="0 0 32 40" aria-hidden="true"><path d="M16 2C12 10 5 17 5 24a11 11 0 0 0 22 0C27 17 20 10 16 2Z"/></svg>
+        <button class="garden-creature garden-creature--rabbit" type="button" data-creature="rabbit" aria-label="Discover Mochi, Guardian of Peace" aria-description="Drag to move. Hold Control while scrolling to resize; use arrow keys to move and plus or minus to resize." aria-controls="gardenDreamPanel" aria-pressed="false">
+          <span class="garden-creature__float" aria-hidden="true"><img class="garden-creature__art" src="assets/garden-animals/Mochi.png" alt=""></span>
         </button>
-        <button class="garden-creature garden-creature--rabbit" type="button" data-creature="rabbit" aria-label="Discover Mochi, Guardian of Peace" aria-controls="gardenDreamPanel" aria-pressed="false">
-          <img class="garden-creature__art" src="assets/garden-animals/Mochi.png" alt="" aria-hidden="true">
+        <button class="garden-creature garden-creature--fox" type="button" data-creature="fox" aria-label="Discover Ember, Guardian of Courage" aria-description="Drag to move. Hold Control while scrolling to resize; use arrow keys to move and plus or minus to resize." aria-controls="gardenDreamPanel" aria-pressed="false">
+          <span class="garden-creature__float" aria-hidden="true"><img class="garden-creature__art" src="assets/garden-animals/Ember.png" alt=""></span>
         </button>
-        <button class="garden-creature garden-creature--fox" type="button" data-creature="fox" aria-label="Discover Ember, Guardian of Courage" aria-controls="gardenDreamPanel" aria-pressed="false">
-          <img class="garden-creature__art" src="assets/garden-animals/Ember.png" alt="" aria-hidden="true">
-        </button>
-        <button class="garden-creature garden-creature--bird" type="button" data-creature="bird" aria-label="Discover Pippa, Guardian of Joy" aria-controls="gardenDreamPanel" aria-pressed="false">
-          <img class="garden-creature__art" src="assets/garden-animals/Pippa.png" alt="" aria-hidden="true">
+        <button class="garden-creature garden-creature--bird" type="button" data-creature="bird" aria-label="Discover Pippa, Guardian of Joy" aria-description="Drag to move. Hold Control while scrolling to resize; use arrow keys to move and plus or minus to resize." aria-controls="gardenDreamPanel" aria-pressed="false">
+          <span class="garden-creature__float" aria-hidden="true"><img class="garden-creature__art" src="assets/garden-animals/Pippa.png" alt=""></span>
         </button>
       </div>
-      <p class="garden-scene-hint">Look closely for tiny garden friends ✧</p>
+      <p class="garden-scene-hint">Drag friends to move · Ctrl + scroll to resize · focus a friend for keyboard controls</p>
     </section>
 
     <section class="garden-wish-detail" id="gardenWishDetail" aria-labelledby="gardenWishDetailTitle" hidden>
@@ -198,7 +195,7 @@
       <aside class="garden-journal" aria-labelledby="gardenJournalTitle">
         <div class="garden-section-heading">
           <div><p class="garden-eyebrow">THINGS THAT GREW</p><h2 id="gardenJournalTitle">Garden journal</h2></div>
-          <span class="garden-creature-counter"><span id="gardenCreatureCount">0</span><span> / 6<br>FRIENDS</span></span>
+          <span class="garden-creature-counter"><span id="gardenCreatureCount">0</span><span> / 5<br>WISH FRIENDS</span></span>
         </div>
         <div class="garden-journal-block">
           <h3>Flowers</h3>
@@ -233,7 +230,7 @@
           <img src="assets/pip-garden.png" alt="Pip holding a glowing moon">
           <div class="garden-pip-message" id="gardenPipGreeting" hidden>
             <strong>A little nighttime magic <span aria-hidden="true">🌙</span></strong>
-            <p>The Dream Garden is awake at night! Your wishes become stars beneath the moon. Switch to night mode to see your collected stars sparkle.</p>
+            <p>The Dream Garden keeps its moonlit sky even in daytime mode. Your wishes become stars beneath the moon, and each star represents a wish saved in your garden.</p>
           </div>
         </div>
       </div>
@@ -241,7 +238,7 @@
         <label for="gardenPrivateDreamCreature">Choose a garden friend</label>
         <select id="gardenPrivateDreamCreature" required>
           <option value="moth">Lumi — Guardian of Hope</option><option value="snail">Nova — Guardian of Patience</option>
-          <option value="sprite">Dewdrop Sprite</option><option value="rabbit">Mochi — Guardian of Peace</option>
+          <option value="rabbit">Mochi — Guardian of Peace</option>
           <option value="fox">Ember — Guardian of Courage</option><option value="bird">Pippa — Guardian of Joy</option>
         </select>
         <div class="garden-selected-guardian" id="gardenSelectedGuardian" aria-live="polite">
@@ -265,14 +262,14 @@
       <div class="garden-guestbook__intro">
         <p class="garden-eyebrow">A LITTLE NOTE FOR THE NURSERY</p>
         <h2 id="gardenGuestbookTitle">Leave a Dream for Pip</h2>
-        <p>Share a note for the nursery guestbook. This is public after moderation; use the private journal above for personal wishes.</p>
+        <p>Share a personal dream, idea, website suggestion, recommendation, or feedback. Notes are public after moderation; keep private wishes in the journal above.</p>
       </div>
       <form class="garden-guestbook__form" id="gardenGuestbookForm">
         <label for="gardenGuestbookName">Display name <span>(optional)</span></label>
         <input id="gardenGuestbookName" name="display_name" type="text" maxlength="60" autocomplete="nickname">
-        <label for="gardenGuestbookMessage">Your dream <span>(required, up to 1000 characters)</span></label>
+        <label for="gardenGuestbookMessage">Your dream, idea, feedback, or recommendation <span>(required, up to 1000 characters)</span></label>
         <textarea id="gardenGuestbookMessage" name="dream_message" maxlength="1000" rows="4" required></textarea>
-        <button class="garden-guestbook__submit" id="gardenGuestbookSubmit" type="submit">Send your dream</button>
+        <button class="garden-guestbook__submit" id="gardenGuestbookSubmit" type="submit">Send your note</button>
         <p class="garden-guestbook__status" id="gardenGuestbookStatus" role="status" aria-live="polite"></p>
       </form>
       <div class="garden-guestbook__entries" aria-labelledby="gardenGuestbookEntriesTitle">

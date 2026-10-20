@@ -115,7 +115,11 @@ the robust option.
 - `PUT /api/garden/state` creates or updates version-1 Garden state for the
   cookie-bound session with an optimistic `revision`; a stale revision returns
   HTTP 409 and that session's current state for a safe merge. Requests require
-  a trusted `Origin`; client-supplied visitor IDs are not accepted.
+  a trusted `Origin`; client-supplied visitor IDs are not accepted. The optional
+  `creatureLayout` state map stores validated per-visitor animal positions
+  (0–100 percent) and scale (0.65–1.5) in the existing JSONB state column; it
+  does not require a database migration. The legacy `sprite` ID remains accepted
+  only to keep previously saved Garden records readable.
 - `GET /api/garden/wish-counts` returns public totals by guardian ID from
   currently persisted private-wish records. It never returns wish text or
   visitor identifiers.

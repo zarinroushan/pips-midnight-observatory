@@ -326,6 +326,50 @@ class GuestbookAndGardenApiTests(unittest.TestCase):
         self.assertEqual(conflict.status_code, 409)
         self.assertEqual(conflict.get_json()["revision"], 1)
 
+    def test_garden_creature_layout_is_persisted_and_validated(self):
+        state = {
+            **self.empty_state,
+            "creatureLayout": {
+                "moth": {"x": 31.5, "y": 42, "scale": 1.2},
+                "fox": {"x": 84, "y": 35, "scale": 0.8},
+            },
+        }
+        saved = self.save_state(self.client, 0, state)
+        self.assertEqual(saved.status_code, 200)
+        self.assertEqual(self.client.get("/api/garden/state").get_json()["state"], state)
+
+        invalid_layouts = (
+            {"moth": {"x": -1, "y": 42, "scale": 1}},
+            {"moth": {"x": 31, "y": 42, "scale": 1.6}},
+            {"sprite": {"x": 31, "y": 42, "scale": 1}},
+            {"moth": {"x": True, "y": 42, "scale": 1}},
+        )
+        for layout in invalid_layouts:
+            with self.subTest(layout=layout):
+                response = self.save_state(
+                    self.client,
+                    1,
+                    {**self.empty_state, "creatureLayout": layout},
+                )
+                self.assertEqual(response.status_code, 400)
+
+    def test_legacy_sprite_wish_remains_readable_without_public_active_count(self):
+        legacy_state = {
+            **self.empty_state,
+            "creatures": ["sprite"],
+            "dreamJournal": [{
+                "id": "legacy-sprite-wish",
+                "wish": "A wish saved before the garden friends changed.",
+                "creature": "sprite",
+                "createdAt": "2026-01-01T00:00:00Z",
+            }],
+        }
+        self.assertEqual(self.save_state(self.client, 0, legacy_state).status_code, 200)
+        restored = self.client.get("/api/garden/state").get_json()["state"]
+        self.assertEqual(restored["dreamJournal"], legacy_state["dreamJournal"])
+        self.assertEqual(restored["creatures"], ["sprite"])
+        self.assertNotIn("sprite", self.client.get("/api/garden/wish-counts").get_json()["counts"])
+
     def test_private_garden_requires_session_and_ignores_client_supplied_ids(self):
         anonymous = backend_app.app.test_client()
         self.assertEqual(anonymous.get("/api/garden/state").status_code, 401)
