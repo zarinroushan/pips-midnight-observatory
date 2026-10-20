@@ -1,7 +1,14 @@
 import os
+import json
+import socket
+import subprocess
+import sys
+import time
 import unittest
+from urllib.error import URLError
+from urllib.request import Request, urlopen
 from unittest.mock import patch
-from uuid import uuid4
+from uuid import UUID
 
 import psycopg
 
@@ -17,12 +24,21 @@ TEST_DATABASE_URL = os.environ.get("DEAR_PIP_TEST_DATABASE_URL")
 )
 class PostgreSQLApiIntegrationTests(unittest.TestCase):
     def setUp(self):
+        self.previous_secret = backend_app.app.config.get("SECRET_KEY")
+        backend_app.app.config["SECRET_KEY"] = "test-only-session-secret-at-least-32-bytes"
         self.database_patch = patch.dict(
             os.environ,
-            {"DATABASE_URL": TEST_DATABASE_URL},
+            {
+                "DATABASE_URL": TEST_DATABASE_URL,
+                "CORS_ALLOWED_ORIGINS": "http://127.0.0.1:5500",
+            },
         )
         self.database_patch.start()
-        self.visitor_id = uuid4()
+        self.client = backend_app.app.test_client()
+        self.origin = "http://127.0.0.1:5500"
+        self.client.get("/api/garden/session", headers={"Origin": self.origin})
+        with self.client.session_transaction() as visitor_session:
+            self.visitor_id = UUID(visitor_session["garden_visitor_id"])
         self.guestbook_entry_id = None
 
     def tearDown(self):
@@ -55,9 +71,66 @@ class PostgreSQLApiIntegrationTests(unittest.TestCase):
                         )
         finally:
             self.database_patch.stop()
+            backend_app.app.config["SECRET_KEY"] = self.previous_secret
+
+    def assert_state_survives_process_restart(self, cookie, expected_state):
+        with socket.socket() as port_socket:
+            port_socket.bind(("127.0.0.1", 0))
+            port = port_socket.getsockname()[1]
+        environment = os.environ.copy()
+        environment.update({
+            "DATABASE_URL": TEST_DATABASE_URL,
+            "SESSION_SECRET": "test-only-session-secret-at-least-32-bytes",
+            "SESSION_COOKIE_SECURE": "false",
+            "SESSION_COOKIE_SAMESITE": "Lax",
+            "CORS_ALLOWED_ORIGINS": self.origin,
+            "TEST_API_PORT": str(port),
+        })
+        environment.pop("PORT", None)
+        environment["APP_ENV"] = "development"
+        code = (
+            "import os; from backend.app import app; "
+            "app.run(host='127.0.0.1', port=int(os.environ['TEST_API_PORT']), "
+            "debug=False, use_reloader=False)"
+        )
+
+        def start_server():
+            process = subprocess.Popen(
+                [sys.executable, "-c", code],
+                cwd=os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+                env=environment,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            for _ in range(100):
+                if process.poll() is not None:
+                    self.fail("The isolated Flask test server exited during startup.")
+                try:
+                    with urlopen(f"http://127.0.0.1:{port}/api/health", timeout=0.25):
+                        return process
+                except (OSError, URLError):
+                    time.sleep(0.05)
+            process.terminate()
+            process.wait(timeout=5)
+            self.fail("The isolated Flask test server did not become ready.")
+
+        def get_state():
+            request = Request(
+                f"http://127.0.0.1:{port}/api/garden/state",
+                headers={"Cookie": cookie, "Origin": self.origin},
+            )
+            with urlopen(request, timeout=5) as response:
+                return json.loads(response.read().decode("utf-8"))
+
+        for _ in range(2):
+            process = start_server()
+            try:
+                self.assertEqual(get_state(), {"state": expected_state, "revision": 1})
+            finally:
+                process.terminate()
+                process.wait(timeout=5)
 
     def test_garden_persistence_and_guestbook_moderation_contract(self):
-        client = backend_app.app.test_client()
         state = {
             "version": 1,
             "plots": [{"seed": "moonblush", "stage": 1}, None, None, None, None],
@@ -65,39 +138,46 @@ class PostgreSQLApiIntegrationTests(unittest.TestCase):
             "plotOwners": [None] * 5,
             "fulfilled": [],
         }
-        path = f"/api/garden/state/{self.visitor_id}"
+        path = "/api/garden/state"
 
-        initial = client.get(path)
+        initial = self.client.get(path)
         self.assertEqual(initial.status_code, 200)
         self.assertEqual(initial.get_json(), {"state": None, "revision": 0})
 
-        saved = client.put(path, json={"revision": 0, "state": state})
+        saved = self.client.put(
+            path, json={"revision": 0, "state": state},
+            headers={"Origin": self.origin},
+        )
         self.assertEqual(saved.status_code, 200)
         self.assertEqual(saved.get_json()["revision"], 1)
+        garden_cookie = self.client.get_cookie("dearpip_garden")
+        self.assert_state_survives_process_restart(
+            f"dearpip_garden={garden_cookie.value}",
+            state,
+        )
 
-        loaded = client.get(path)
+        loaded = self.client.get(path)
         self.assertEqual(loaded.status_code, 200)
         self.assertEqual(loaded.get_json(), {"state": state, "revision": 1})
 
         progress_path = f"/api/progress/{self.visitor_id}/home"
         progress_data = {"version": 1, "collected": [0], "collectedButterflies": []}
-        progress_saved = client.put(
+        progress_saved = self.client.put(
             progress_path, json={"revision": 0, "data": progress_data}
         )
         self.assertEqual(progress_saved.status_code, 200)
-        self.assertEqual(client.get(progress_path).get_json()["data"], progress_data)
+        self.assertEqual(self.client.get(progress_path).get_json()["data"], progress_data)
 
-        context = client.get(f"/api/stories/context/{self.visitor_id}")
+        context = self.client.get(f"/api/stories/context/{self.visitor_id}")
         self.assertEqual(context.status_code, 200)
         self.assertTrue(any(
             project["name"] == "Dear Pip — Midnight Nursery"
             for project in context.get_json()["projects"]
         ))
 
-        submission = client.post(
+        submission = self.client.post(
             "/api/guestbook",
             json={
-                "display_name": "Integration Test",
                 "dream_message": f"Temporary integration entry {self.visitor_id}",
             },
         )
@@ -105,7 +185,7 @@ class PostgreSQLApiIntegrationTests(unittest.TestCase):
         self.assertEqual(submission.get_json()["entry"]["status"], "pending")
         self.guestbook_entry_id = submission.get_json()["entry"]["id"]
 
-        approved_entries = client.get("/api/guestbook?limit=100")
+        approved_entries = self.client.get("/api/guestbook?limit=100")
         self.assertEqual(approved_entries.status_code, 200)
         self.assertNotIn(
             self.guestbook_entry_id,

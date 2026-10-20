@@ -1,13 +1,13 @@
 const gardenStorageKey = 'dear-pip-dream-garden-v1';
 const gardenDreamStorageKey = 'dear-pip-dream-garden-dreams-v1';
-const gardenVisitorStorageKey = 'dear-pip-garden-visitor-v1';
 const gardenApiMeta = document.querySelector('meta[name="dear-pip-api-base"]');
 const configuredGardenApiBase = gardenApiMeta?.content.trim();
-const gardenApiBase = (configuredGardenApiBase || (
-  ['localhost', '127.0.0.1'].includes(window.location.hostname)
-    ? 'http://127.0.0.1:5000'
-    : window.location.origin
-)).replace(/\/+$/, '');
+const isLocalGardenFrontend = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+const gardenApiBase = isLocalGardenFrontend
+  ? `http://${window.location.hostname}:5000`
+  : configuredGardenApiBase
+    ? configuredGardenApiBase.replace(/\/+$/, '')
+    : null;
 const seeds = {
   moonblush: { id: 'moonblush', name: 'Moonblush', description: 'A soft pink flower for gentle dreams.', color: '#f3a9c4', mark: '✿' },
   sunpocket: { id: 'sunpocket', name: 'Sunpocket', description: 'A golden bloom that keeps a little sunshine.', color: '#f4cf78', mark: '✦' },
@@ -17,53 +17,67 @@ const seeds = {
 };
 const creatures = {
   moth: {
-    name: 'Moon Moth',
-    description: 'A tiny moth who dusts sleepy wings with moonbeam pollen.',
-    personality: 'Gentle and a little shy, she follows the quietest glimmers.',
+    name: 'Lumi',
+    title: 'Guardian of Hope',
+    description: 'The little butterfly fairy who guides wishes toward their brightest possibilities. Lumi brings courage, wonder, and a little sparkle to dreams that feel far away.',
+    personality: 'Cheerful, curious, encouraging.',
+    image: 'assets/garden-animals/Lumi.png',
     wish: 'She dreams of carrying a soft goodnight light to every flower that feels lonely.',
-    story: 'When the moon hides behind a cloud, Moon Moth visits the garden blooms one by one, leaving a shimmer so they know the night is still kind.',
-    invention: 'Pip imagines a pocket-sized Moonbeam Lantern that gathers stray moonlight and lets Moon Moth sprinkle it along her evening route.',
+    story: 'When the moon hides behind a cloud, Lumi visits the garden blooms one by one, leaving a shimmer so they know the night is still kind.',
+    invention: 'Pip imagines a pocket-sized Moonbeam Lantern that gathers stray moonlight and lets Lumi sprinkle it along her evening route.',
     dreamSeed: 'moonblush',
   },
   snail: {
-    name: 'Dandelion Snail',
-    description: 'A patient little traveler carrying a seed-fluff cottage on its back.',
-    personality: 'Thoughtful and unhurried, he likes to notice small things others pass by.',
+    name: 'Nova',
+    title: 'Guardian of Patience',
+    description: 'A dreamy little snail whose shell holds a miniature night sky. Nova watches over slow-growing dreams and reminds you that there is no deadline for becoming who you want to be.',
+    personality: 'Calm, thoughtful, dependable.',
+    image: 'assets/garden-animals/Nova.png',
     wish: 'He wishes to visit the far side of the garden without leaving his cozy dandelion home behind.',
-    story: 'Each evening, Dandelion Snail sets off toward the pond, but pauses to help every seedling he meets along the way.',
-    invention: 'Pip imagines a tiny Starlight Seed-Cart: a gentle rolling nook that carries Dandelion Snail and his fluffy home over the garden paths.',
+    story: 'Each evening, Nova sets off toward the pond, but pauses to help every seedling along the way.',
+    invention: 'Pip imagines a tiny Starlight Seed-Cart: a gentle rolling nook that carries Nova and her starry shell over the garden paths.',
     dreamSeed: 'starfern',
   },
   sprite: {
     name: 'Dewdrop Sprite',
     description: 'A bright-eyed sprite who gathers dew to water the night flowers.',
     personality: 'Curious, cheerful, and always ready to share what she finds.',
+    icon: '💧',
     wish: 'She dreams of saving enough morning dew to help the garden sparkle through a long, dry night.',
     story: 'Before sunrise, Dewdrop Sprite tiptoes across the leaves, collecting the very roundest drops in a little crystal cup.',
     invention: 'Pip imagines a Dewdrop Catcher: a tiny leaf-shaped collector that stores cool droplets and releases them as a silver mist when the flowers need a drink.',
     dreamSeed: 'cloudbell',
   },
   rabbit: {
-    name: 'Clover Rabbit', description: 'A soft-footed rabbit who gathers clover beneath the lanterns.',
-    personality: 'Kind, careful, and happiest when every friend has a cozy place to rest.',
-    wish: 'Clover hopes to make a sheltered nook where shy garden friends can feel safe.',
-    story: 'At dusk, Clover follows the warm lanterns and leaves a little clover beside each quiet burrow.',
+    name: 'Mochi',
+    title: 'Guardian of Peace',
+    description: 'A sleepy bunny who keeps the garden soft and safe. Mochi looks after wishes about rest, comfort, healing, and feeling at home in your own little world.',
+    personality: 'Gentle, sleepy, affectionate.',
+    image: 'assets/garden-animals/Mochi.png',
+    wish: 'Mochi hopes to make a sheltered nook where shy garden friends can feel safe.',
+    story: 'At dusk, Mochi follows the warm lanterns and leaves a little clover beside each quiet burrow.',
     invention: 'Pip imagines a Cloverlight Shelter: a tiny leafy nook with a gentle glow for night visitors.',
     dreamSeed: 'sunpocket',
   },
   fox: {
-    name: 'Amber Fox', description: 'A sleepy fox who follows the golden path between the flowers.',
-    personality: 'Inventive and thoughtful, with a talent for finding a bright idea in small things.',
-    wish: 'Amber dreams of a path that helps every wandering friend find their way home.',
-    story: 'When fog settles over the garden, Amber leaves tiny lantern marks along the safe path.',
+    name: 'Ember',
+    title: 'Guardian of Courage',
+    description: 'A gentle fox who protects brave dreams and reminds you that small steps count. Ember looks after wishes about trying something new and believing in yourself.',
+    personality: 'Brave, loyal, quietly playful.',
+    image: 'assets/garden-animals/Ember.png',
+    wish: 'Ember dreams of a path that helps every wandering friend find their way home.',
+    story: 'When fog settles over the garden, Ember leaves tiny lantern marks along the safe path.',
     invention: 'Pip imagines a Startrail Compass: a pocket guide that glows softly near familiar places.',
     dreamSeed: 'dreamrose',
   },
   bird: {
-    name: 'Lullaby Bird', description: 'A small songbird who carries gentle tunes from bloom to bloom.',
-    personality: 'Bright, patient, and always ready to share a quiet melody.',
+    name: 'Pippa',
+    title: 'Guardian of Joy',
+    description: 'A tiny songbird who carries happy thoughts through the garden. Pippa looks after wishes about friendship, laughter, creativity, and finding your own voice.',
+    personality: 'Affectionate, bubbly, expressive.',
+    image: 'assets/garden-animals/Pippa.png',
     wish: 'The little bird hopes every garden friend can hear a soothing song at bedtime.',
-    story: 'Before the stars appear, Lullaby Bird sings one soft note to each flower on the hill.',
+    story: 'Before the stars appear, Pippa sings one soft note to each flower on the hill.',
     invention: 'Pip imagines a Petal Music Box that gathers the bird’s melody and plays it beside sleepy blooms.',
     dreamSeed: 'cloudbell',
   },
@@ -83,6 +97,23 @@ const privateDreamInput = document.querySelector('#gardenPrivateDream');
 const privateDreamCreature = document.querySelector('#gardenPrivateDreamCreature');
 const privateDreamStatus = document.querySelector('#gardenPrivateDreamStatus');
 const privateDreamJournal = document.querySelector('#gardenPrivateDreamJournal');
+const wishStarRoot = document.querySelector('#gardenWishStars');
+const wishStarCount = document.querySelector('#gardenWishStarCount');
+const wishDetail = document.querySelector('#gardenWishDetail');
+const wishDetailTitle = document.querySelector('#gardenWishDetailTitle');
+const wishDetailDream = document.querySelector('#gardenWishDetailDream');
+const wishDetailIcon = document.querySelector('#gardenWishDetailIcon');
+const wishDetailEmoji = document.querySelector('#gardenWishDetailEmoji');
+const wishDetailAnimal = document.querySelector('#gardenWishDetailAnimal');
+const wishDetailDate = document.querySelector('#gardenWishDetailDate');
+const wishDetailClose = document.querySelector('#gardenWishDetailClose');
+const pipGreeting = document.querySelector('#gardenPipGreeting');
+const selectedGuardianImage = document.querySelector('#gardenSelectedGuardianImage');
+const selectedGuardianEmoji = document.querySelector('#gardenSelectedGuardianEmoji');
+const selectedGuardianName = document.querySelector('#gardenSelectedGuardianName');
+const selectedGuardianTitle = document.querySelector('#gardenSelectedGuardianTitle');
+const selectedGuardianDescription = document.querySelector('#gardenSelectedGuardianDescription');
+const selectedGuardianWishCount = document.querySelector('#gardenSelectedGuardianWishCount');
 const syncStatus = document.querySelector('#gardenSyncStatus');
 const guestbookForm = document.querySelector('#gardenGuestbookForm');
 const guestbookName = document.querySelector('#gardenGuestbookName');
@@ -92,6 +123,11 @@ const guestbookStatus = document.querySelector('#gardenGuestbookStatus');
 const guestbookEntries = document.querySelector('#gardenGuestbookEntries');
 const dreamPanel = document.querySelector('#gardenDreamPanel');
 const dreamName = document.querySelector('#gardenDreamName');
+const dreamPortrait = document.querySelector('#gardenDreamPortrait');
+const dreamEmoji = document.querySelector('#gardenDreamEmoji');
+const dreamGuardianTitle = document.querySelector('#gardenDreamGuardianTitle');
+const dreamWishCount = document.querySelector('#gardenDreamWishCount');
+const dreamDescription = document.querySelector('#gardenDreamDescription');
 const dreamPersonality = document.querySelector('#gardenDreamPersonality');
 const dreamWish = document.querySelector('#gardenDreamWish');
 const dreamStory = document.querySelector('#gardenDreamStory');
@@ -99,6 +135,35 @@ const dreamInvention = document.querySelector('#gardenDreamInvention');
 const discoveredCreatures = new Set();
 const fulfilledDreams = new Set();
 let dreamJournal = [];
+const confirmedWishIds = new Set();
+const pendingWishRemovalIds = new Set();
+const guardianWishCounts = new Map();
+let guardianWishCountsRequest = 0;
+const wishStarPositions = new Map();
+let activeWishDetailsId = null;
+let wishDetailsReturnFocus = null;
+const wishStarSlots = (() => {
+  const creatures = [
+    { x: 15, y: 42, rx: 8, ry: 13 },
+    { x: 54, y: 65, rx: 8, ry: 13 },
+    { x: 90, y: 46, rx: 8, ry: 13 },
+    { x: 30, y: 72, rx: 8, ry: 13 },
+    { x: 48, y: 39, rx: 8, ry: 13 },
+    { x: 69, y: 34, rx: 8, ry: 13 },
+    { x: 83.5, y: 19, rx: 15, ry: 22 },
+  ];
+  const slots = [];
+  [9, 16, 23, 30, 37].forEach((top) => {
+    for (let left = 7; left <= 95; left += 6) {
+      if (top <= 22 && left <= 43) continue;
+      const overlapsLandmark = creatures.some((landmark) => (
+        ((left - landmark.x) / landmark.rx) ** 2 + ((top - landmark.y) / landmark.ry) ** 2 < 1.15
+      ));
+      if (!overlapsLandmark) slots.push({ left, top });
+    }
+  });
+  return slots;
+})();
 let plots = Array(5).fill(null);
 let plotDreamOwners = Array(5).fill(null);
 let selectedSeed = null;
@@ -108,11 +173,11 @@ let dreamStorageAvailable = true;
 let localGardenDataInvalid = false;
 let localDreamDataInvalid = false;
 let pendingReset = false;
-let visitorId = null;
-let visitorIdPersistent = true;
+let gardenSessionReady = false;
 let gardenRevision = 0;
 let gardenSyncReady = false;
 let gardenSyncPending = false;
+let gardenPersistedVersion = 0;
 let gardenSyncTimer = null;
 let gardenSyncChain = Promise.resolve();
 let gardenChangeVersion = 0;
@@ -124,15 +189,10 @@ function setSyncStatus(message, state = '') {
 }
 
 function setGardenSavedStatus() {
-  setSyncStatus(
-    visitorIdPersistent
-      ? 'Garden saved online'
-      : 'Garden synced for this visit; browser storage is unavailable.',
-    visitorIdPersistent ? 'saved' : 'session-only',
-  );
+  setSyncStatus('Garden saved online', 'saved');
 }
 
-function createVisitorId() {
+function createGardenRecordId() {
   if (window.crypto?.randomUUID) return window.crypto.randomUUID();
   if (!window.crypto?.getRandomValues) return null;
   const bytes = window.crypto.getRandomValues(new Uint8Array(16));
@@ -140,23 +200,6 @@ function createVisitorId() {
   bytes[8] = (bytes[8] & 0x3f) | 0x80;
   const hex = [...bytes].map((byte) => byte.toString(16).padStart(2, '0')).join('');
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
-}
-
-function getVisitorId() {
-  try {
-    const saved = window.localStorage.getItem(gardenVisitorStorageKey);
-    if (saved && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(saved)) {
-      return saved;
-    }
-    const created = createVisitorId();
-    if (!created) return null;
-    window.localStorage.setItem(gardenVisitorStorageKey, created);
-    return created;
-  } catch (error) {
-    visitorIdPersistent = false;
-    console.error('Could not access the Garden visitor identifier:', error);
-    return createVisitorId();
-  }
 }
 
 function gardenStateSnapshot() {
@@ -222,8 +265,17 @@ function mergeGardenStates(serverState, localState) {
   const local = normalizeGardenState(localState);
   if (!local) return { state: merged, overflow: false };
   merged.creatures = [...new Set([...merged.creatures, ...local.creatures])];
-  const journalEntries = [...(merged.dreamJournal || []), ...(local.dreamJournal || [])];
-  merged.dreamJournal = [...new Map(journalEntries.map((entry) => [entry.id, entry])).values()]
+  const serverEntries = (merged.dreamJournal || []).filter((entry) => (
+    !pendingWishRemovalIds.has(entry.id)
+  ));
+  const serverIds = new Set(serverEntries.map((entry) => entry.id));
+  const unconfirmedLocalEntries = (local.dreamJournal || []).filter((entry) => (
+    !serverIds.has(entry.id)
+    && !confirmedWishIds.has(entry.id)
+    && !pendingWishRemovalIds.has(entry.id)
+  ));
+  merged.dreamJournal = [...new Map([...serverEntries, ...unconfirmedLocalEntries]
+    .map((entry) => [entry.id, entry])).values()]
     .sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt)).slice(-20);
   let overflow = false;
 
@@ -280,6 +332,8 @@ function storeGardenStateLocally(state) {
       plotOwners: plotDreamOwners,
       fulfilled: [...fulfilledDreams],
       dreamJournal,
+      confirmedWishIds: [...confirmedWishIds].filter((id) => dreamJournal.some((entry) => entry.id === id)),
+      pendingWishRemovalIds: [...pendingWishRemovalIds],
       resetRequested: pendingReset,
     }));
   } catch (error) {
@@ -290,7 +344,45 @@ function storeGardenStateLocally(state) {
   }
 }
 
+function markWishIdsConfirmed(state) {
+  const entries = Array.isArray(state?.dreamJournal) ? state.dreamJournal : [];
+  let changed = false;
+  entries.forEach((entry) => {
+    if (typeof entry.id === 'string'
+      && !pendingWishRemovalIds.has(entry.id)
+      && !confirmedWishIds.has(entry.id)) {
+      confirmedWishIds.add(entry.id);
+      changed = true;
+    }
+  });
+  if (changed) persistWishSyncMetadata();
+  return changed;
+}
+
+function persistWishSyncMetadata() {
+  if (!dreamStorageAvailable || localDreamDataInvalid) return;
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(gardenDreamStorageKey) || '{}');
+    window.localStorage.setItem(gardenDreamStorageKey, JSON.stringify({
+      ...saved,
+      version: 1,
+      plotOwners: plotDreamOwners,
+      fulfilled: [...fulfilledDreams],
+      dreamJournal,
+      confirmedWishIds: [...confirmedWishIds].filter((id) => dreamJournal.some((entry) => entry.id === id)),
+      pendingWishRemovalIds: [...pendingWishRemovalIds],
+      resetRequested: pendingReset,
+    }));
+  } catch (error) {
+    dreamStorageAvailable = false;
+    console.error('Could not persist Garden wish synchronization metadata:', error);
+  }
+}
+
 async function gardenApiRequest(path, options = {}) {
+  if (!gardenApiBase) {
+    throw new Error('The Garden API URL is not configured for this site. Please contact the site administrator.');
+  }
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), 8000);
   try {
@@ -299,10 +391,24 @@ async function gardenApiRequest(path, options = {}) {
       signal: controller.signal,
       headers: { ...(options.body ? { 'Content-Type': 'application/json' } : {}), ...options.headers },
       mode: 'cors',
-      credentials: 'omit',
+      credentials: 'include',
     });
   } finally {
     window.clearTimeout(timeout);
+  }
+}
+
+async function readGardenApiJson(response, serviceName) {
+  const contentType = response.headers.get('content-type')?.split(';', 1)[0].trim().toLowerCase();
+  if (!contentType || (!contentType.includes('/json') && !contentType.endsWith('+json'))) {
+    throw new Error(
+      `${serviceName} returned a non-JSON response (HTTP ${response.status}). Check the configured backend URL.`,
+    );
+  }
+  try {
+    return await response.json();
+  } catch {
+    throw new Error(`${serviceName} returned an invalid JSON response (HTTP ${response.status}).`);
   }
 }
 
@@ -324,21 +430,22 @@ function scheduleGardenSyncRetry() {
 }
 
 async function syncGardenState() {
-  if (!gardenSyncPending || !gardenSyncReady || !visitorId) return;
+  if (!gardenSyncPending || !gardenSyncReady || !gardenSessionReady) return;
   for (let attempt = 0; attempt < 3 && gardenSyncPending; attempt += 1) {
     const sentVersion = gardenChangeVersion;
     const localState = gardenStateSnapshot();
     setSyncStatus('Saving your garden…', 'saving');
     try {
-      const response = await gardenApiRequest(`/api/garden/state/${visitorId}`, {
+      const response = await gardenApiRequest('/api/garden/state', {
         method: 'PUT',
         body: JSON.stringify({ revision: gardenRevision, state: localState }),
       });
-      const result = await response.json();
+      const result = await readGardenApiJson(response, 'Garden API');
       if (response.status === 409) {
         if (result.state && !normalizeGardenState(result.state)) {
           throw new Error('The server returned an invalid Garden state.');
         }
+        const newlyConfirmedWishes = result.state ? markWishIdsConfirmed(result.state) : false;
         gardenRevision = result.revision;
         const merged = pendingReset
           ? { state: localState, overflow: false }
@@ -352,11 +459,15 @@ async function syncGardenState() {
           storeGardenStateLocally(merged.state);
           gardenChangeVersion += 1;
           render();
+        } else if (newlyConfirmedWishes) {
+          renderWishStars();
         }
         continue;
       }
       if (!response.ok) throw new Error('Garden save request failed.');
       gardenRevision = result.revision;
+      gardenPersistedVersion = sentVersion;
+      if (markWishIdsConfirmed(localState)) renderWishStars();
       if (pendingReset && sentVersion === gardenChangeVersion) {
         pendingReset = false;
         if (!localDreamDataInvalid) {
@@ -374,7 +485,14 @@ async function syncGardenState() {
       }
       if (sentVersion === gardenChangeVersion) {
         gardenSyncPending = false;
+        pendingWishRemovalIds.clear();
+        for (const id of confirmedWishIds) {
+          if (!dreamJournal.some((entry) => entry.id === id)) confirmedWishIds.delete(id);
+        }
+        persistWishSyncMetadata();
         setGardenSavedStatus();
+        renderPrivateDreams();
+        loadGuardianWishCounts();
       }
     } catch (error) {
       setSyncStatus('Offline — your local garden is kept and will retry.', 'offline');
@@ -391,21 +509,21 @@ async function syncGardenState() {
 
 async function initializeGardenSync() {
   if (gardenSyncReady) return;
-  visitorId = visitorId || getVisitorId();
-  if (!visitorId) {
-    setSyncStatus('Online garden sync is unavailable; progress stays in this browser.', 'offline');
-    return;
-  }
   setSyncStatus('Loading your saved garden…', 'loading');
   try {
-    const response = await gardenApiRequest(`/api/garden/state/${visitorId}`);
+    const sessionResponse = await gardenApiRequest('/api/garden/session');
+    if (!sessionResponse.ok) throw new Error('The private Garden session could not be started.');
+    const response = await gardenApiRequest('/api/garden/state');
     if (!response.ok) throw new Error('Garden load request failed.');
-    const result = await response.json();
+    const result = await readGardenApiJson(response, 'Garden API');
+    gardenSessionReady = true;
     if (result.state && !normalizeGardenState(result.state)) {
       throw new Error('The server returned an invalid Garden state.');
     }
     const localState = gardenStateSnapshot();
     gardenRevision = result.revision;
+    if (result.state) markWishIdsConfirmed(result.state);
+    gardenPersistedVersion = gardenChangeVersion;
     const merged = pendingReset
       ? { state: localState, overflow: false }
       : result.state
@@ -418,6 +536,7 @@ async function initializeGardenSync() {
       render();
     }
     gardenSyncReady = true;
+    render();
     const shouldSave = !merged.overflow && (pendingReset
       || (result.state
         ? JSON.stringify(merged.state) !== JSON.stringify(normalizeGardenState(result.state))
@@ -440,7 +559,10 @@ async function initializeGardenSync() {
 }
 
 function hasGardenProgress(state) {
-  return state.plots.some(Boolean) || state.creatures.length > 0 || state.fulfilled.length > 0;
+  return state.plots.some(Boolean)
+    || state.creatures.length > 0
+    || state.fulfilled.length > 0
+    || Boolean(state.dreamJournal?.length);
 }
 
 function renderGuestbookEntries(entries) {
@@ -448,7 +570,7 @@ function renderGuestbookEntries(entries) {
   if (!entries.length) {
     const empty = document.createElement('li');
     empty.className = 'garden-guestbook__empty';
-    empty.textContent = 'Approved dreams will appear here.';
+    empty.textContent = 'No approved dreams yet. Please check back soon.';
     guestbookEntries.append(empty);
     return;
   }
@@ -456,7 +578,7 @@ function renderGuestbookEntries(entries) {
     const item = document.createElement('li');
     item.className = 'garden-guestbook__entry';
     const author = document.createElement('strong');
-    author.textContent = entry.display_name || 'A Dreamer';
+    author.textContent = entry.display_name || 'Anonymous';
     const message = document.createElement('p');
     message.textContent = entry.dream_message;
     const date = document.createElement('time');
@@ -471,13 +593,22 @@ function renderGuestbookEntries(entries) {
 }
 
 async function loadGuestbookEntries() {
+  guestbookStatus.textContent = 'Loading approved dreams…';
   try {
     const response = await gardenApiRequest('/api/guestbook?limit=20');
-    if (!response.ok) throw new Error('Guestbook request failed.');
-    const result = await response.json();
+    const result = await readGardenApiJson(response, 'Guestbook API');
+    if (!response.ok) throw new Error(result?.error || `The guestbook could not be loaded (HTTP ${response.status}).`);
+    if (!Array.isArray(result.entries)) throw new Error('The guestbook returned an invalid response.');
     renderGuestbookEntries(Array.isArray(result.entries) ? result.entries : []);
+    guestbookStatus.textContent = '';
   } catch (error) {
-    guestbookStatus.textContent = 'The guestbook is taking a quiet moment. Please try again later.';
+    guestbookStatus.textContent = error.name === 'TypeError' || error.name === 'AbortError'
+      ? 'Could not reach the guestbook service. Please check back later.'
+      : error.message || 'The guestbook is unavailable right now. Please try again later.';
+    const failure = document.createElement('li');
+    failure.className = 'garden-guestbook__empty';
+    failure.textContent = guestbookStatus.textContent;
+    guestbookEntries.replaceChildren(failure);
     console.error('Could not load approved guestbook entries:', error);
   }
 }
@@ -495,13 +626,16 @@ guestbookForm.addEventListener('submit', async (event) => {
         dream_message: guestbookMessage.value.trim(),
       }),
     });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error || 'Your dream could not be sent.');
+    const result = await readGardenApiJson(response, 'Guestbook API');
+    if (!response.ok) throw new Error(result?.error || `Your dream could not be sent (HTTP ${response.status}).`);
+    if (result?.entry?.status !== 'pending') {
+      throw new Error('The guestbook did not confirm that your message was saved. Please try again later.');
+    }
     guestbookForm.reset();
     guestbookStatus.textContent = 'Your dream was received as a pending note. Review controls are not included on this page.';
   } catch (error) {
-    guestbookStatus.textContent = error.message === 'Failed to fetch' || error.name === 'AbortError'
-      ? 'The guestbook is offline just now. Your message was not sent; please try again.'
+    guestbookStatus.textContent = error instanceof TypeError || error.name === 'AbortError'
+      ? 'The guestbook service could not confirm your message. Please try again later.'
       : error.message || 'Your dream could not be sent. Please try again.';
   } finally {
     guestbookSubmit.disabled = false;
@@ -566,6 +700,17 @@ function readSavedDreams() {
       && typeof entry.wish === 'string' && entry.wish.trim() && entry.wish.length <= 250
       && Object.hasOwn(creatures, entry.creature) && typeof entry.createdAt === 'string'
       && !Number.isNaN(Date.parse(entry.createdAt))).slice(-20);
+    if (Array.isArray(saved.confirmedWishIds)) {
+      saved.confirmedWishIds.forEach((id) => {
+        if (dreamJournal.some((entry) => entry.id === id)) confirmedWishIds.add(id);
+      });
+    }
+    if (Array.isArray(saved.pendingWishRemovalIds)) {
+      saved.pendingWishRemovalIds.forEach((id) => {
+        if (typeof id === 'string' && id.length <= 64) pendingWishRemovalIds.add(id);
+      });
+      dreamJournal = dreamJournal.filter((entry) => !pendingWishRemovalIds.has(entry.id));
+    }
     pendingReset = saved.resetRequested === true;
     plotDreamOwners = Array.from({ length: 5 }, (_, index) => {
       const owner = saved.plotOwners[index];
@@ -600,6 +745,8 @@ function saveDreams() {
       plotOwners: plotDreamOwners,
       fulfilled: [...fulfilledDreams],
       dreamJournal,
+      confirmedWishIds: [...confirmedWishIds].filter((id) => dreamJournal.some((entry) => entry.id === id)),
+      pendingWishRemovalIds: [...pendingWishRemovalIds],
       resetRequested: pendingReset,
     }));
   } catch (error) {
@@ -728,6 +875,7 @@ function render() {
   renderJournal(creatureJournal, [...discoveredCreatures].map((id) => creatures[id].name), 'No friends found yet.');
   renderJournal(fulfilledDreamJournal, [...fulfilledDreams].map((id) => `${creatures[id].name} · dream fulfilled`), 'No dreams fulfilled yet.');
   renderPrivateDreams();
+  renderWishStars();
   plantButton.disabled = !selectedSeed || !plots.includes(null);
   plantButton.textContent = !plots.includes(null)
     ? 'Every plot is planted'
@@ -735,6 +883,210 @@ function render() {
       ? `Plant ${seeds[selectedSeed].name}`
       : 'Choose a seed to plant';
 }
+
+function hashWishId(id) {
+  let hash = 2166136261;
+  for (let index = 0; index < id.length; index += 1) {
+    hash ^= id.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+function renderWishStars() {
+  const confirmedEntries = dreamJournal.filter((entry) => confirmedWishIds.has(entry.id));
+  const activeIds = new Set(confirmedEntries.map((entry) => entry.id));
+  const existingStars = new Map([...wishStarRoot.children].map((star) => [star.dataset.wishId, star]));
+
+  if (activeWishDetailsId && !activeIds.has(activeWishDetailsId)) closeWishDetails(false);
+
+  for (const [id, star] of existingStars) {
+    if (!activeIds.has(id)) {
+      star.remove();
+      wishStarPositions.delete(id);
+      existingStars.delete(id);
+    }
+  }
+
+  const occupiedSlots = new Set(
+    [...wishStarPositions].filter(([id]) => activeIds.has(id)).map(([, slotIndex]) => slotIndex),
+  );
+  confirmedEntries.forEach((entry) => {
+    let slotIndex = wishStarPositions.get(entry.id);
+    if (slotIndex === undefined) {
+      const start = hashWishId(entry.id) % wishStarSlots.length;
+      let bestSpacing = -1;
+      let bestTieBreak = Number.POSITIVE_INFINITY;
+      wishStarSlots.forEach((slot, candidate) => {
+        if (occupiedSlots.has(candidate)) return;
+        const spacing = occupiedSlots.size
+          ? Math.min(...[...occupiedSlots].map((occupied) => {
+            const other = wishStarSlots[occupied];
+            return ((slot.left - other.left) * 1200 / 590) ** 2 + (slot.top - other.top) ** 2;
+          }))
+          : Number.POSITIVE_INFINITY;
+        const tieBreak = (candidate - start + wishStarSlots.length) % wishStarSlots.length;
+        if (spacing > bestSpacing || (spacing === bestSpacing && tieBreak < bestTieBreak)) {
+          slotIndex = candidate;
+          bestSpacing = spacing;
+          bestTieBreak = tieBreak;
+        }
+      });
+      if (slotIndex === undefined) {
+        throw new Error('There are not enough garden positions for the saved wish stars.');
+      }
+      wishStarPositions.set(entry.id, slotIndex);
+      occupiedSlots.add(slotIndex);
+    }
+
+    const star = existingStars.get(entry.id) || document.createElement('button');
+    star.className = 'garden-wish-star';
+    star.type = 'button';
+    star.dataset.wishId = entry.id;
+    star.setAttribute('aria-label', `Open saved dream details for ${creatures[entry.creature].name}`);
+    star.setAttribute('aria-controls', 'gardenWishDetail');
+    star.setAttribute('aria-expanded', String(activeWishDetailsId === entry.id));
+    star.textContent = '✦';
+    star.style.left = `${wishStarSlots[slotIndex].left}%`;
+    star.style.top = `${wishStarSlots[slotIndex].top}%`;
+    if (!star.isConnected) wishStarRoot.append(star);
+  });
+  wishStarCount.textContent = `${confirmedEntries.length} wish ${confirmedEntries.length === 1 ? 'star' : 'stars'}`;
+}
+
+function openWishDetails(id, trigger) {
+  if (!confirmedWishIds.has(id)) return;
+  const entry = dreamJournal.find((wish) => wish.id === id);
+  if (!entry || !Object.hasOwn(creatures, entry.creature)) return;
+
+  if (activeWishDetailsId && activeWishDetailsId !== id) {
+    wishStarRoot.querySelector(`[data-wish-id="${CSS.escape(activeWishDetailsId)}"]`)
+      ?.setAttribute('aria-expanded', 'false');
+  }
+  activeWishDetailsId = id;
+  wishDetailsReturnFocus = trigger;
+  wishDetailDream.textContent = entry.wish;
+  const creature = creatures[entry.creature];
+  wishDetailIcon.hidden = !creature.image;
+  if (creature.image) wishDetailIcon.src = creature.image;
+  wishDetailEmoji.hidden = Boolean(creature.image);
+  wishDetailEmoji.textContent = creature.icon || '';
+  wishDetailAnimal.textContent = creatures[entry.creature].name;
+
+  const savedDate = new Date(entry.createdAt);
+  if (!Number.isNaN(savedDate.getTime())) {
+    wishDetailDate.dateTime = savedDate.toISOString();
+    wishDetailDate.textContent = `Saved ${new Intl.DateTimeFormat(undefined, { dateStyle: 'long' }).format(savedDate)}`;
+    wishDetailDate.hidden = false;
+  } else {
+    wishDetailDate.removeAttribute('datetime');
+    wishDetailDate.textContent = '';
+    wishDetailDate.hidden = true;
+  }
+
+  wishDetail.hidden = false;
+  trigger.setAttribute('aria-expanded', 'true');
+  wishDetailTitle.focus({ preventScroll: true });
+  wishDetail.scrollIntoView({
+    block: 'nearest',
+    behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+  });
+}
+
+function closeWishDetails(restoreFocus = true) {
+  if (activeWishDetailsId) {
+    wishStarRoot.querySelector(`[data-wish-id="${CSS.escape(activeWishDetailsId)}"]`)
+      ?.setAttribute('aria-expanded', 'false');
+  }
+  activeWishDetailsId = null;
+  wishDetail.hidden = true;
+  if (restoreFocus && wishDetailsReturnFocus?.isConnected) wishDetailsReturnFocus.focus();
+  wishDetailsReturnFocus = null;
+}
+
+wishStarRoot.addEventListener('click', (event) => {
+  const star = event.target.closest('.garden-wish-star');
+  if (!star || !wishStarRoot.contains(star)) return;
+  openWishDetails(star.dataset.wishId, star);
+});
+
+wishDetailClose.addEventListener('click', () => closeWishDetails());
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && !wishDetail.hidden) closeWishDetails();
+});
+
+function updatePipGreeting() {
+  pipGreeting.hidden = document.documentElement.dataset.mood !== 'dawn';
+}
+
+const gardenThemeObserver = new MutationObserver((changes) => {
+  if (changes.some((change) => change.attributeName === 'data-mood')) updatePipGreeting();
+});
+gardenThemeObserver.observe(document.documentElement, {
+  attributes: true,
+  attributeFilter: ['data-mood'],
+});
+updatePipGreeting();
+
+function updateSelectedGuardian() {
+  const guardian = creatures[privateDreamCreature.value];
+  if (!guardian) return;
+  selectedGuardianName.textContent = guardian.name;
+  selectedGuardianTitle.textContent = guardian.title || 'Garden Friend';
+  selectedGuardianDescription.textContent = guardian.description;
+  selectedGuardianWishCount.textContent = guardianWishCountMessage(privateDreamCreature.value);
+  selectedGuardianImage.hidden = !guardian.image;
+  selectedGuardianEmoji.hidden = Boolean(guardian.image);
+  selectedGuardianEmoji.textContent = guardian.icon || '';
+  if (guardian.image) {
+    selectedGuardianImage.src = guardian.image;
+    selectedGuardianImage.alt = `${guardian.name}, ${guardian.title}`;
+  } else {
+    selectedGuardianImage.removeAttribute('src');
+    selectedGuardianImage.alt = '';
+  }
+}
+
+function guardianWishCountMessage(id) {
+  if (!guardianWishCounts.has(id)) return 'Shared wish count unavailable.';
+  const count = guardianWishCounts.get(id);
+  return `${count} ${count === 1 ? 'wish' : 'wishes'} received`;
+}
+
+function updateDreamPanelWishCount(id) {
+  dreamWishCount.textContent = guardianWishCountMessage(id);
+}
+
+async function loadGuardianWishCounts() {
+  const requestId = ++guardianWishCountsRequest;
+  try {
+    const response = await gardenApiRequest('/api/garden/wish-counts');
+    const result = await readGardenApiJson(response, 'Garden API');
+    if (!response.ok || !result.counts || typeof result.counts !== 'object' || Array.isArray(result.counts)) {
+      throw new Error('Shared Garden wish counts are unavailable.');
+    }
+    const counts = new Map(Object.keys(creatures).map((id) => [id, 0]));
+    Object.entries(result.counts).forEach(([id, count]) => {
+      if (!Object.hasOwn(creatures, id) || !Number.isSafeInteger(count) || count < 0) {
+        throw new Error('The server returned invalid Garden wish counts.');
+      }
+      counts.set(id, count);
+    });
+    if (requestId !== guardianWishCountsRequest) return;
+    guardianWishCounts.clear();
+    counts.forEach((count, id) => guardianWishCounts.set(id, count));
+  } catch (error) {
+    if (requestId !== guardianWishCountsRequest) return;
+    guardianWishCounts.clear();
+    console.error('Could not load shared Garden wish counts:', error);
+  }
+  updateSelectedGuardian();
+  if (selectedCreatureId) updateDreamPanelWishCount(selectedCreatureId);
+}
+
+privateDreamCreature.addEventListener('change', updateSelectedGuardian);
+updateSelectedGuardian();
 
 function renderPrivateDreams() {
   if (!privateDreamJournal) return;
@@ -761,9 +1113,47 @@ function renderPrivateDreams() {
       date.dateTime = parsedDate.toISOString();
       date.textContent = parsedDate.toLocaleDateString();
     }
-    item.append(wish, status, date);
+    const remove = document.createElement('button');
+    remove.className = 'garden-private-wish-remove';
+    remove.type = 'button';
+    remove.textContent = 'Remove wish';
+    remove.setAttribute('aria-label', `Remove your wish for ${creatures[entry.creature].name}`);
+    remove.disabled = !gardenSyncReady || gardenSyncPending;
+    remove.addEventListener('click', () => removePrivateWish(entry.id));
+    item.append(wish, status, date, remove);
     privateDreamJournal.append(item);
   });
+}
+
+async function removePrivateWish(id) {
+  if (!gardenSyncReady || !gardenSessionReady || gardenSyncPending || pendingWishRemovalIds.has(id)) return;
+  const entry = dreamJournal.find((wish) => wish.id === id);
+  if (!entry || !window.confirm(`Remove this private wish for ${creatures[entry.creature].name} and its saved star?`)) return;
+
+  const previousJournal = [...dreamJournal];
+  pendingWishRemovalIds.add(id);
+  dreamJournal = dreamJournal.filter((wish) => wish.id !== id);
+  gardenChangeVersion += 1;
+  const removalVersion = gardenChangeVersion;
+  gardenSyncPending = true;
+  storeGardenStateLocally(gardenStateSnapshot());
+  render();
+  privateDreamStatus.textContent = 'Removing your private wish…';
+  window.clearTimeout(gardenSyncTimer);
+  gardenSyncChain = gardenSyncChain.then(syncGardenState, syncGardenState);
+  await gardenSyncChain;
+
+  if (gardenPersistedVersion >= removalVersion) {
+    privateDreamStatus.textContent = 'Your private wish and its star were removed.';
+    return;
+  }
+
+  dreamJournal = previousJournal;
+  pendingWishRemovalIds.delete(id);
+  gardenChangeVersion += 1;
+  storeGardenStateLocally(gardenStateSnapshot());
+  render();
+  privateDreamStatus.textContent = 'The wish could not be removed from the saved garden. Please try again.';
 }
 
 function animateDreamToCreature(creatureId) {
@@ -790,21 +1180,22 @@ function animateDreamToCreature(creatureId) {
 
 privateDreamForm?.addEventListener('submit', async (event) => {
   event.preventDefault();
-  if (!gardenSyncReady || !visitorId) {
+  if (!gardenSyncReady || !gardenSessionReady) {
     privateDreamStatus.textContent = 'The private journal is not connected yet. Please try again when garden sync is ready.';
     return;
   }
   const wish = privateDreamInput.value.trim();
   const creature = privateDreamCreature.value;
   if (!wish || !Object.hasOwn(creatures, creature)) return;
-  const previous = dreamJournal;
-  const id = createVisitorId();
+  const previous = [...dreamJournal];
+  const id = createGardenRecordId();
   if (!id) {
     privateDreamStatus.textContent = 'A secure journal entry ID could not be created in this browser.';
     return;
   }
   dreamJournal = [...dreamJournal, { id, wish, creature, createdAt: new Date().toISOString() }].slice(-20);
   gardenChangeVersion += 1;
+  const saveVersion = gardenChangeVersion;
   gardenSyncPending = true;
   storeGardenStateLocally(gardenStateSnapshot());
   render();
@@ -813,7 +1204,7 @@ privateDreamForm?.addEventListener('submit', async (event) => {
   window.clearTimeout(gardenSyncTimer);
   gardenSyncChain = gardenSyncChain.then(syncGardenState, syncGardenState);
   await gardenSyncChain;
-  if (!gardenSyncPending) {
+  if (gardenPersistedVersion >= saveVersion) {
     privateDreamStatus.textContent = 'Pip tucked your private wish safely into the garden journal.';
     privateDreamForm.classList.add('is-saved');
     animateDreamToCreature(creature);
@@ -885,9 +1276,21 @@ document.querySelectorAll('.garden-creature').forEach((button) => {
       item.classList.toggle('is-selected', selected);
     });
     button.classList.add('is-discovered');
-    button.setAttribute('aria-label', `${creature.name}: ${creature.description}`);
-    button.querySelector('.garden-creature__label').textContent = '✓';
+    button.setAttribute('aria-label', `${creature.name}${creature.title ? `, ${creature.title}` : ''}: ${creature.description}`);
+    dreamPortrait.hidden = !creature.image;
+    if (creature.image) {
+      dreamPortrait.src = creature.image;
+      dreamPortrait.alt = `${creature.name}, ${creature.title}`;
+    } else {
+      dreamPortrait.removeAttribute('src');
+      dreamPortrait.alt = '';
+    }
+    dreamEmoji.hidden = Boolean(creature.image);
+    dreamEmoji.textContent = creature.icon || '';
     dreamName.textContent = creature.name;
+    dreamGuardianTitle.textContent = creature.title || 'Garden friend';
+    updateDreamPanelWishCount(id);
+    dreamDescription.textContent = creature.description;
     dreamPersonality.textContent = creature.personality;
     dreamWish.textContent = creature.wish;
     dreamStory.textContent = creature.story;
@@ -902,8 +1305,11 @@ document.querySelectorAll('.garden-creature').forEach((button) => {
 });
 
 document.querySelector('#gardenReset').addEventListener('click', () => {
-  if (!window.confirm('Start a fresh garden? This will clear all planted seeds and discovered friends.')) return;
+  if (!window.confirm('Start a fresh garden? This will clear planted seeds, discovered friends, and all private wishes.')) return;
   pendingReset = true;
+  dreamJournal.forEach((entry) => pendingWishRemovalIds.add(entry.id));
+  gardenChangeVersion += 1;
+  gardenSyncPending = true;
   localGardenDataInvalid = false;
   localDreamDataInvalid = false;
   storageAvailable = true;
@@ -923,9 +1329,8 @@ document.querySelector('#gardenReset').addEventListener('click', () => {
     button.classList.remove('is-discovered');
     button.classList.remove('is-selected');
     button.setAttribute('aria-pressed', 'false');
-    button.querySelector('.garden-creature__label').textContent = '?';
     const creature = creatures[button.dataset.creature];
-    button.setAttribute('aria-label', `Discover the ${creature.name}`);
+    button.setAttribute('aria-label', `Discover ${creature.name}${creature.title ? `, ${creature.title}` : ''}`);
   });
   feedback.textContent = 'The garden is ready for new little dreams.';
   saveGarden();
@@ -939,13 +1344,12 @@ document.querySelectorAll('.garden-creature').forEach((button) => {
   if (discoveredCreatures.has(button.dataset.creature)) {
     const creature = creatures[button.dataset.creature];
     button.classList.add('is-discovered');
-    button.setAttribute('aria-label', `${creature.name}: ${creature.description}`);
-    button.querySelector('.garden-creature__label').textContent = '✓';
+    button.setAttribute('aria-label', `${creature.name}${creature.title ? `, ${creature.title}` : ''}: ${creature.description}`);
   }
 });
 render();
-visitorId = getVisitorId();
 initializeGardenSync();
+loadGuardianWishCounts();
 loadGuestbookEntries();
 
 const pipCanvas = document.querySelector('#gardenPipCanvas');

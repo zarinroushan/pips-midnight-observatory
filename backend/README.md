@@ -9,10 +9,20 @@ frontend or commit them.
 
 Set `CORS_ALLOWED_ORIGINS` to a comma-separated list of exact frontend origins.
 For local Live Server, the default allows `http://127.0.0.1:5500` and
-`http://localhost:5500`. For Render, set the deployed frontend origin explicitly.
-The Dream Garden API base can be set in its `dear-pip-api-base` meta element;
-blank uses localhost only when the page itself is served from localhost, and
-otherwise uses the same origin.
+`http://localhost:5500`. The Garden preserves the frontend hostname when
+selecting its local API host so both services remain same-site. For a deployed
+frontend, configure the exact origin explicitly. The Dream Garden API base can
+be set in its `dear-pip-api-base` meta element; blank uses localhost only when
+the page itself is served from localhost, and otherwise uses the same origin.
+
+Set a stable, random `SESSION_SECRET` of at least 32 characters in the ignored
+project-root `.env` and in the backend's private deployment settings. Flask uses
+it to sign the HTTP-only Garden session cookie; changing it invalidates existing
+sessions. Never expose it in frontend code or logs. `SESSION_COOKIE_SECURE`
+defaults to false locally and true when `PORT` or `APP_ENV=production` is set.
+Use `SESSION_COOKIE_SAMESITE=Lax` when the frontend and API are same-site. Only
+use `SESSION_COOKIE_SAMESITE=None` with `SESSION_COOKIE_SECURE=true` when a
+separately hosted frontend truly requires cross-site cookies.
 
 Run the Flask API from the `backend/` directory in PowerShell:
 
@@ -28,23 +38,32 @@ Install dependencies from that same directory if needed:
 python -m pip install -r .\requirements.txt
 ```
 
-Serve `frontend/` using VS Code Live Server over HTTP, not `file://`. The Garden
-uses an opaque random UUID saved in browser localStorage as a bearer-like key
-for its server state. It is not authentication: someone who obtains that
-identifier can read and change the associated Garden. No fingerprinting or
-personal profile is used.
+Serve `frontend/` using VS Code Live Server over HTTP, not `file://`. The
+browser requests a session from Flask; Flask generates the visitor UUID and
+stores it in its signed, HTTP-only cookie. The Garden API accepts no visitor ID
+from the URL or request body and requires the cookie for private state reads
+and writes. State-changing Garden requests also require an exact trusted
+`Origin`. No login, fingerprinting, or personal profile is used.
 
 ## Database migrations
 
 Migrations are additive and safe to re-run; they do not drop or truncate data.
-Migration `001_garden_state.sql` creates Garden state storage and creates the guestbook table if absent.
-index. Migration `002_atlas.sql` creates Dream Atlas skills, evidence, project,
+Migration `001_garden_state.sql` creates Garden state storage, the guestbook
+table if absent, and its approved-entry index. Migration `002_atlas.sql` creates Dream Atlas skills, evidence, project,
 and project-skill relationship tables, then adds the verified Dear Pip project
 record without a repository URL. It leaves existing project details unchanged.
 If `guestbook_entries` already exists, ensure it has `id`, `display_name`,
 `dream_message`, `status`, and `created_at` columns before applying migration 001.
 Migration `003_visitor_progress.sql` adds revisioned progress for home, Atlas,
 bedtime reading, and Lullaby Lab notes.
+
+No schema migration is needed for server-validated Garden sessions: the
+existing `garden_states.visitor_id` UUID key stores the server-generated
+identity. Existing rows keyed by browser-generated UUIDs are left untouched and
+are not treated as authenticated sessions. If the original browser still has
+its local Garden backup, the frontend can sync that local progress into its new
+server-issued session. Legacy database rows are never exposed by supplying
+their old UUID.
 
 Set `DATABASE_URL` privately in the current PowerShell session, then from the
 repository root run:
@@ -73,19 +92,33 @@ Render supplies `PORT`; the Flask development server is only for local use.
 
 If the frontend and API have different origins, set the
 `dear-pip-api-base` meta element in `frontend/dream-garden.html` to the deployed
-API base URL. Do not put database credentials in that element or any frontend
-file.
+API base URL and `CORS_ALLOWED_ORIGINS` to the exact frontend origin.
+Credentialed CORS never uses a wildcard. For HTTPS production, set
+`SESSION_COOKIE_SECURE=true` and a stable `SESSION_SECRET`; keep SameSite=Lax
+when both services share a site. If they are on different sites, SameSite=None
+is required, but browser third-party-cookie blocking can still prevent the
+session from working. A same-site deployment (for example, routing `/api`
+through the frontend host or using frontend/API subdomains under one site) is
+the robust option.
 
 ## API
 
 - `GET /api/health` checks the Flask process.
 - `GET /api/ready` distinguishes unavailable PostgreSQL from missing required
-  schema and reports only readiness/table names, never connection settings.
-- `GET /api/garden/state/<visitor_uuid>` loads state or returns `state: null`,
-  `revision: 0` for a new visitor.
-- `PUT /api/garden/state/<visitor_uuid>` creates or updates version-1 Garden
-  state with an optimistic `revision`; a stale revision returns HTTP 409 and
-  the current state for a safe merge.
+  schema and invalid session configuration; it reports only readiness and
+  missing table names, never connection settings.
+- `GET /api/garden/session` creates a server-generated anonymous visitor
+  identity and sets a signed, HTTP-only, one-year session cookie. It does not
+  return the identity in the response body.
+- `GET /api/garden/state` loads state for the cookie-bound session or returns
+  `state: null`, `revision: 0` for a new visitor.
+- `PUT /api/garden/state` creates or updates version-1 Garden state for the
+  cookie-bound session with an optimistic `revision`; a stale revision returns
+  HTTP 409 and that session's current state for a safe merge. Requests require
+  a trusted `Origin`; client-supplied visitor IDs are not accepted.
+- `GET /api/garden/wish-counts` returns public totals by guardian ID from
+  currently persisted private-wish records. It never returns wish text or
+  visitor identifiers.
 - `GET /api/guestbook?limit=20` returns approved entries only (limit 1–100).
 - `POST /api/guestbook` accepts `display_name` (optional, up to 60 characters)
   and `dream_message` (required, up to 1000 characters); entries remain pending.
@@ -98,6 +131,11 @@ file.
   `POST /api/atlas/scan/import`, `POST /api/skills`, and `POST /api/projects`
   require `X-Admin-Token` and the private `ATLAS_ADMIN_TOKEN` setting. Owner
   management remains disabled until a token of at least 32 characters is set.
+
+Anonymous sessions are not accounts and cannot be recovered after the browser
+cookie is cleared or expires. A valid signed session cookie is a bearer
+credential; protect it with HTTPS in production. Public guardian wish totals
+remain aggregate counts and never include wish text or visitor identifiers.
 
 The repository preview scans only the directory containing this installation.
 It accepts no browser path, executes no source, and skips `.env`, hidden files,
@@ -133,7 +171,8 @@ From the repository root:
 
 The default tests mock Psycopg calls and do not connect to the configured
 database. An explicitly opt-in integration test exercises PostgreSQL-backed
-Garden persistence and guestbook moderation against a separate test database.
+Garden persistence across Flask process restarts using the same signed cookie
+and guestbook moderation against a separate test database.
 Set `DEAR_PIP_TEST_DATABASE_URL` only to an isolated database with migrations
 001–003 applied, then run:
 
@@ -145,7 +184,8 @@ Remove-Item Env:DEAR_PIP_TEST_DATABASE_URL
 
 The integration test creates temporary rows with unique identifiers and deletes
 only those rows during cleanup. Do not point it at production or a database
-whose data must remain untouched.
+whose data must remain untouched. The default suite does not prove live
+PostgreSQL behavior; run the integration test to verify the isolated database.
 
 ## Visitor progress and story context
 

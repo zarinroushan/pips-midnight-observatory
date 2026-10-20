@@ -29,9 +29,11 @@ backend/    Flask app, requirements, SQL migrations, and tests
 
 The Dream Garden, Dream Atlas, and visitor progress for home stars, constellation
 discoveries, bedtime reading, and Lullaby Lab notes use the Flask API with
-browser-local fallback/cache. The opaque visitor UUID is not an authenticated
-account. Story context uses verified project and skill names plus saved
-milestones; the stories themselves remain authored fiction.
+browser-local fallback/cache. Dream Garden private state uses a server-issued,
+signed HTTP-only session cookie. The separate cross-page visitor-progress API
+still uses an opaque browser UUID and is not an authenticated account. Story
+context uses verified project and skill names plus saved milestones; the stories
+themselves remain authored fiction.
 
 The Dreamworld progressively loads Three.js r180 from jsDelivr and builds its
 islands, portals, sky, and lights from geometry at runtime. It requires a
@@ -75,6 +77,11 @@ Live Server `localhost` and `127.0.0.1` origins.
 Keep `DATABASE_URL` in the ignored project-root `.env`; never put it in
 frontend code. Flask resolves this file relative to `backend/app.py`, so its
 working directory does not affect local environment loading.
+
+Add a stable, random `SESSION_SECRET` with at least 32 characters to that same
+`.env` file for the signed, HTTP-only Garden session cookie. Keep the secret
+private and unchanged across API restarts so the browser session remains valid.
+Local cookie defaults are HTTP-compatible and use SameSite=Lax.
 
 Dream Atlas owner management also requires a private `ATLAS_ADMIN_TOKEN` with
 at least 32 characters in that ignored `.env`; see `backend/README.md` for its
@@ -121,4 +128,8 @@ command and `waitress-serve --listen=0.0.0.0:$PORT app:app` as the start command
 Set `DATABASE_URL` to the hosted PostgreSQL connection string and
 `CORS_ALLOWED_ORIGINS` to the exact static frontend origin. Set the Garden page's
 `dear-pip-api-base` meta content to the backend origin when the two are hosted
-separately. Do not add database credentials to frontend code.
+separately. Also set a stable random `SESSION_SECRET` (at least 32 characters)
+and `SESSION_COOKIE_SECURE=true`. Keep SameSite=Lax for same-site deployments;
+cross-site hosting needs SameSite=None and Secure cookies, which can still be
+blocked by browser third-party-cookie restrictions. Do not add database or
+session secrets to frontend code.

@@ -1,10 +1,13 @@
 import os
 import threading
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from collections import defaultdict, deque
 from pathlib import Path
+from urllib.parse import urlsplit
+from uuid import UUID, uuid4
 from flask import Flask, jsonify, request
+from flask import session as flask_session
 from dotenv import load_dotenv
 import psycopg
 from psycopg.types.json import Jsonb
@@ -24,6 +27,24 @@ except ImportError:  # Support the documented `python app.py` launch from backen
 app.register_blueprint(atlas_blueprint)
 app.register_blueprint(progress_blueprint)
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024
+production_mode = (
+    bool(os.environ.get("PORT"))
+    or os.environ.get("APP_ENV", "").lower() == "production"
+)
+secure_cookie_default = production_mode
+secure_cookie_setting = os.environ.get("SESSION_COOKIE_SECURE")
+app.config.update(
+    SECRET_KEY=os.environ.get("SESSION_SECRET"),
+    SESSION_COOKIE_NAME="dearpip_garden",
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SECURE=(
+        secure_cookie_setting.lower() in {"1", "true", "yes"}
+        if secure_cookie_setting is not None
+        else secure_cookie_default
+    ),
+    SESSION_COOKIE_SAMESITE=os.environ.get("SESSION_COOKIE_SAMESITE", "Lax"),
+    PERMANENT_SESSION_LIFETIME=timedelta(days=365),
+)
 GUESTBOOK_NAME_MAX_LENGTH = 60
 GUESTBOOK_MESSAGE_MAX_LENGTH = 1000
 GUESTBOOK_DEFAULT_LIMIT = 20
@@ -44,8 +65,11 @@ guestbook_requests = defaultdict(deque)
 guestbook_rate_lock = threading.Lock()
 
 
-def database_unavailable():
-    app.logger.error("Guestbook database request failed.")
+def database_unavailable(error=None):
+    if error is None:
+        app.logger.error("Guestbook database request failed (DATABASE_URL is not configured).")
+    else:
+        app.logger.error("Guestbook database request failed (%s).", type(error).__name__)
     return jsonify(error="Guestbook is temporarily unavailable."), 503
 
 
@@ -57,6 +81,68 @@ def garden_database_unavailable(error):
         app.logger.error("Garden database request failed (%s).", type(error).__name__)
         message = "Garden storage is temporarily unavailable."
     return jsonify(error=message), 503
+
+
+def configured_origins():
+    value = os.environ.get("CORS_ALLOWED_ORIGINS")
+    if value is None:
+        value = "" if production_mode else "http://127.0.0.1:5500,http://localhost:5500"
+    origins = {item.strip().rstrip("/") for item in value.split(",") if item.strip()}
+    trusted = set()
+    for origin in origins:
+        parts = urlsplit(origin)
+        if (
+            origin != "*"
+            and parts.scheme in {"http", "https"}
+            and parts.netloc
+            and not parts.path
+            and not parts.query
+            and not parts.fragment
+        ):
+            trusted.add(origin)
+    return trusted
+
+
+def visitor_session_configured():
+    secret = app.config.get("SECRET_KEY")
+    same_site = str(app.config.get("SESSION_COOKIE_SAMESITE", "")).lower()
+    return (
+        isinstance(secret, str)
+        and len(secret) >= 32
+        and same_site in {"lax", "strict", "none"}
+        and (not production_mode or app.config["SESSION_COOKIE_SECURE"])
+        and (same_site != "none" or app.config["SESSION_COOKIE_SECURE"])
+    )
+
+
+def garden_visitor_id(create=False):
+    visitor_id = flask_session.get("garden_visitor_id")
+    if isinstance(visitor_id, str):
+        try:
+            return UUID(visitor_id)
+        except ValueError:
+            visitor_id = None
+    if not create:
+        return None
+    visitor_id = uuid4()
+    flask_session["garden_visitor_id"] = str(visitor_id)
+    flask_session.permanent = True
+    return visitor_id
+
+
+def trusted_request_origin():
+    origin = request.headers.get("Origin")
+    if not origin:
+        return False
+    return origin.rstrip("/") in configured_origins()
+
+
+@app.before_request
+def protect_garden_writes():
+    if request.path == "/api/garden/state" and request.method == "PUT":
+        if not trusted_request_origin():
+            return jsonify(error="A trusted site origin is required for Garden changes."), 403
+    return None
 
 
 def garden_state_conflict(current):
@@ -186,18 +272,11 @@ def guestbook_rate_limited():
 @app.after_request
 def apply_cors(response):
     origin = request.headers.get("Origin")
-    allowed = {
-        item.strip()
-        for item in os.environ.get(
-            "CORS_ALLOWED_ORIGINS",
-            "http://127.0.0.1:5500,http://localhost:5500",
-        ).split(",")
-        if item.strip()
-    }
-    if origin and origin in allowed:
+    if origin and origin.rstrip("/") in configured_origins():
         response.headers["Access-Control-Allow-Origin"] = origin
         response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, OPTIONS"
         response.headers["Access-Control-Allow-Headers"] = "Content-Type, X-Admin-Token"
+        response.headers["Access-Control-Allow-Credentials"] = "true"
         response.vary.add("Origin")
     return response
 
@@ -214,6 +293,12 @@ def health():
 
 @app.get("/api/ready")
 def ready():
+    if not visitor_session_configured():
+        app.logger.error("Anonymous Garden session configuration is missing or invalid.")
+        return jsonify(status="unavailable", session="unavailable"), 503
+    if production_mode and not configured_origins():
+        app.logger.error("No exact trusted frontend origins are configured.")
+        return jsonify(status="unavailable", cors="unavailable"), 503
     connection_url = database_url()
     if not connection_url:
         return jsonify(status="unavailable", database="unavailable"), 503
@@ -225,7 +310,8 @@ def ready():
     try:
         with connect_database(connection_url) as connection:
             connection.execute("SELECT 1")
-    except (psycopg.Error, ValueError):
+    except (psycopg.Error, ValueError) as error:
+        app.logger.error("Database readiness connection failed (%s).", type(error).__name__)
         return jsonify(status="unavailable", database="unavailable", schema="unchecked"), 503
 
     try:
@@ -267,8 +353,7 @@ def list_pending_guestbook_entries():
         app.logger.error("Guestbook table is missing; apply migration 001_garden_state.sql.")
         return jsonify(error="Guestbook storage is not set up yet."), 503
     except psycopg.Error as error:
-        app.logger.error("Pending guestbook query failed (%s).", type(error).__name__)
-        return database_unavailable()
+        return database_unavailable(error)
     return jsonify(entries=[
         {
             "id": row[0], "display_name": row[1],
@@ -309,8 +394,7 @@ def moderate_guestbook_entry(entry_id):
         app.logger.error("Guestbook table is missing; apply migration 001_garden_state.sql.")
         return jsonify(error="Guestbook storage is not set up yet."), 503
     except psycopg.Error as error:
-        app.logger.error("Guestbook moderation failed (%s).", type(error).__name__)
-        return database_unavailable()
+        return database_unavailable(error)
     if row is None:
         if exists is None:
             return jsonify(error="Guestbook entry not found."), 404
@@ -348,8 +432,7 @@ def list_guestbook_entries():
         app.logger.error("Guestbook table is missing; verify its database schema.")
         return jsonify(error="Guestbook storage is not set up yet. Please contact the site administrator."), 503
     except (psycopg.Error, ValueError) as error:
-        app.logger.error("Guestbook list failed (%s).", type(error).__name__)
-        return jsonify(error="Guestbook is temporarily unavailable."), 503
+        return database_unavailable(error)
 
     return jsonify(entries=[
         {
@@ -367,7 +450,7 @@ def submit_guestbook_entry():
     if not request.is_json:
         return jsonify(error="A JSON request body is required."), 400
     payload = request.get_json(silent=True)
-    if not isinstance(payload, dict):
+    if not isinstance(payload, dict) or set(payload) - {"display_name", "dream_message"}:
         return jsonify(error="A JSON object is required."), 400
 
     dream_message = payload.get("dream_message")
@@ -386,6 +469,7 @@ def submit_guestbook_entry():
         display_name = display_name.strip() or None
         if display_name and len(display_name) > GUESTBOOK_NAME_MAX_LENGTH:
             return jsonify(error="Display name must be 60 characters or fewer."), 400
+    display_name = display_name or "Anonymous"
 
     connection_url = database_url()
     if not connection_url:
@@ -410,6 +494,9 @@ def submit_guestbook_entry():
         app.logger.error("Guestbook submission failed (%s).", type(error).__name__)
         return jsonify(error="Guestbook is temporarily unavailable."), 503
 
+    if row is None:
+        app.logger.error("Guestbook submission returned no persisted entry.")
+        return jsonify(error="Guestbook is temporarily unavailable."), 503
     return jsonify(
         message="Your dream was received and is awaiting review.",
         entry={
@@ -420,10 +507,32 @@ def submit_guestbook_entry():
     ), 201
 
 
-@app.get("/api/garden/state/<uuid:visitor_id>")
-def get_garden_state(visitor_id):
+@app.get("/api/garden/session")
+def create_garden_session():
+    if not visitor_session_configured():
+        app.logger.error("Anonymous Garden session requested without valid session configuration.")
+        return jsonify(error="Private Garden sessions are temporarily unavailable."), 503
+    garden_visitor_id(create=True)
+    return jsonify(status="ready"), 200
+
+
+def require_garden_visitor_id():
+    if not visitor_session_configured():
+        return None, (jsonify(error="Private Garden sessions are temporarily unavailable."), 503)
+    visitor_id = garden_visitor_id()
+    if visitor_id is None:
+        return None, (jsonify(error="Start a Garden session before accessing private progress."), 401)
+    return visitor_id, None
+
+
+@app.get("/api/garden/state")
+def get_garden_state():
+    visitor_id, error_response = require_garden_visitor_id()
+    if error_response:
+        return error_response
     connection_url = database_url()
     if not connection_url:
+        app.logger.error("Garden database request failed (DATABASE_URL is not configured).")
         return jsonify(error="Garden storage is temporarily unavailable."), 503
     try:
         with connect_database(connection_url) as connection:
@@ -438,8 +547,42 @@ def get_garden_state(visitor_id):
     return jsonify(state=row[1], revision=row[0]), 200
 
 
-@app.put("/api/garden/state/<uuid:visitor_id>")
-def put_garden_state(visitor_id):
+@app.get("/api/garden/wish-counts")
+def get_garden_wish_counts():
+    connection_url = database_url()
+    if not connection_url:
+        return jsonify(error="Garden storage is temporarily unavailable."), 503
+    counts = {creature: 0 for creature in GARDEN_CREATURE_SEEDS}
+    try:
+        with connect_database(connection_url) as connection:
+            rows = connection.execute(
+                """
+                SELECT wish->>'creature' AS creature, COUNT(*)
+                FROM garden_states
+                CROSS JOIN LATERAL jsonb_array_elements(
+                    CASE
+                        WHEN jsonb_typeof(state->'dreamJournal') = 'array'
+                        THEN state->'dreamJournal'
+                        ELSE '[]'::jsonb
+                    END
+                ) AS wishes(wish)
+                WHERE wish->>'creature' = ANY(%s)
+                GROUP BY wish->>'creature'
+                """,
+                (list(GARDEN_CREATURE_SEEDS),),
+            ).fetchall()
+    except psycopg.Error as error:
+        return garden_database_unavailable(error)
+    for creature, count in rows:
+        counts[creature] = count
+    return jsonify(counts=counts), 200
+
+
+@app.put("/api/garden/state")
+def put_garden_state():
+    visitor_id, error_response = require_garden_visitor_id()
+    if error_response:
+        return error_response
     if request.content_length and request.content_length > 12 * 1024:
         return jsonify(error="Garden state is too large."), 413
     if not request.is_json:
@@ -459,6 +602,7 @@ def put_garden_state(visitor_id):
         return jsonify(error="Garden state is invalid."), 400
     connection_url = database_url()
     if not connection_url:
+        app.logger.error("Garden database request failed (DATABASE_URL is not configured).")
         return jsonify(error="Garden storage is temporarily unavailable."), 503
 
     revision = None
@@ -514,10 +658,11 @@ def put_garden_state(visitor_id):
 
 def run_server():
     render_port = os.environ.get("PORT")
+    is_production = bool(render_port) or os.environ.get("APP_ENV", "").lower() == "production"
     app.run(
         host="0.0.0.0" if render_port else "127.0.0.1",
         port=int(render_port or 5000),
-        debug=not bool(render_port),
+        debug=not is_production,
     )
 
 

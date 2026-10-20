@@ -43,11 +43,23 @@ class FakeConnection:
             return self
         if self.last_query.startswith("SELECT id, display_name"):
             self.params = params
-            self.fetchall_result = self.guestbook_rows
+            requested_status = params[0]
+            self.fetchall_result = [
+                row[:4]
+                for row in self.guestbook_rows
+                if (row[4] if len(row) > 4 else "approved") == requested_status
+            ]
             return self
         if self.last_query.startswith("INSERT INTO guestbook_entries"):
             self.insert_params = params
             self.fetchone_result = self.guestbook_insert
+            self.guestbook_rows.append((
+                self.guestbook_insert[0],
+                params[0],
+                params[1],
+                self.guestbook_insert[2],
+                params[2],
+            ))
             return self
         if self.last_query.startswith("UPDATE guestbook_entries SET status"):
             status, entry_id = params
@@ -61,6 +73,16 @@ class FakeConnection:
             return self
         if self.last_query.startswith("SELECT revision, state"):
             self.fetchone_result = self.state_store.get(str(params[0]))
+            return self
+        if self.last_query.startswith("SELECT wish->>'creature' AS creature, COUNT(*)"):
+            allowed_creatures = set(params[0])
+            counts = {}
+            for _, state in self.state_store.values():
+                for wish in state.get("dreamJournal", []):
+                    creature = wish.get("creature")
+                    if creature in allowed_creatures:
+                        counts[creature] = counts.get(creature, 0) + 1
+            self.fetchall_result = sorted(counts.items())
             return self
         if self.last_query.startswith("INSERT INTO garden_states"):
             visitor_id, state = params
@@ -91,7 +113,7 @@ class FakeConnection:
 
 
 class GuestbookAndGardenApiTests(unittest.TestCase):
-    visitor_id = "1fa85f64-5717-4562-b3fc-2c963f66afa6"
+    origin = "http://127.0.0.1:5500"
     empty_state = {
         "version": 1,
         "plots": [None] * 5,
@@ -101,7 +123,8 @@ class GuestbookAndGardenApiTests(unittest.TestCase):
     }
 
     def setUp(self):
-        self.client = backend_app.app.test_client()
+        self.previous_secret = backend_app.app.config.get("SECRET_KEY")
+        backend_app.app.config["SECRET_KEY"] = "test-only-session-secret-at-least-32-bytes"
         self.state_store = {}
         self.guestbook_rows = [
             (
@@ -120,13 +143,29 @@ class GuestbookAndGardenApiTests(unittest.TestCase):
             return_value=self.connection,
         )
         self.connect_patch.start()
-        self.env_patch = patch.dict(os.environ, {"DATABASE_URL": "postgresql://test"})
+        self.env_patch = patch.dict(
+            os.environ,
+            {
+                "DATABASE_URL": "postgresql://test",
+                "CORS_ALLOWED_ORIGINS": f"{self.origin},http://localhost:5500",
+            },
+        )
         self.env_patch.start()
+        self.client = backend_app.app.test_client()
+        self.client.get("/api/garden/session", headers={"Origin": self.origin})
         backend_app.guestbook_requests.clear()
 
     def tearDown(self):
         self.env_patch.stop()
         self.connect_patch.stop()
+        backend_app.app.config["SECRET_KEY"] = self.previous_secret
+
+    def save_state(self, client, revision, state):
+        return client.put(
+            "/api/garden/state",
+            json={"revision": revision, "state": state},
+            headers={"Origin": self.origin},
+        )
 
     def test_health_and_readiness(self):
         self.assertEqual(
@@ -170,6 +209,13 @@ class GuestbookAndGardenApiTests(unittest.TestCase):
             ).status_code,
             400,
         )
+        self.assertEqual(
+            self.client.post(
+                "/api/guestbook",
+                json={"dream_message": "A dream", "unexpected": "value"},
+            ).status_code,
+            400,
+        )
 
     def test_guestbook_submission_is_pending_and_parameterized(self):
         response = self.client.post(
@@ -190,6 +236,18 @@ class GuestbookAndGardenApiTests(unittest.TestCase):
             ),
         )
         self.assertIn("VALUES (%s, %s, %s)", self.connection.last_query)
+
+    def test_guestbook_empty_name_is_anonymous_and_pending(self):
+        response = self.client.post(
+            "/api/guestbook",
+            json={"display_name": "  ", "dream_message": "A small, hopeful dream"},
+        )
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(self.connection.insert_params[0], "Anonymous")
+        self.assertEqual(self.connection.insert_params[2], "pending")
+        self.assertEqual(response.get_json()["entry"]["status"], "pending")
+        public_entries = self.client.get("/api/guestbook").get_json()["entries"]
+        self.assertNotIn(response.get_json()["entry"]["id"], [entry["id"] for entry in public_entries])
 
     def test_guestbook_lists_approved_only_and_bounds_limit(self):
         response = self.client.get("/api/guestbook?limit=2")
@@ -255,42 +313,151 @@ class GuestbookAndGardenApiTests(unittest.TestCase):
         self.assertNotIn("private", submission.get_data(as_text=True))
 
     def test_garden_state_load_save_and_revision_conflict(self):
-        path = f"/api/garden/state/{self.visitor_id}"
-        self.assertEqual(self.client.get(path).get_json(), {"state": None, "revision": 0})
-        save = self.client.put(path, json={"revision": 0, "state": self.empty_state})
+        self.assertEqual(
+            self.client.get("/api/garden/state").get_json(),
+            {"state": None, "revision": 0},
+        )
+        save = self.save_state(self.client, 0, self.empty_state)
         self.assertEqual(save.status_code, 200)
         self.assertEqual(save.get_json()["revision"], 1)
-        loaded = self.client.get(path)
+        loaded = self.client.get("/api/garden/state")
         self.assertEqual(loaded.get_json()["state"], self.empty_state)
-        conflict = self.client.put(path, json={"revision": 0, "state": self.empty_state})
+        conflict = self.save_state(self.client, 0, self.empty_state)
         self.assertEqual(conflict.status_code, 409)
         self.assertEqual(conflict.get_json()["revision"], 1)
 
-    def test_garden_state_rejects_invalid_values_and_oversize(self):
-        path = f"/api/garden/state/{self.visitor_id}"
-        invalid = json.loads(json.dumps(self.empty_state))
-        invalid["plots"][0] = {"seed": "<script>", "stage": 0}
+    def test_private_garden_requires_session_and_ignores_client_supplied_ids(self):
+        anonymous = backend_app.app.test_client()
+        self.assertEqual(anonymous.get("/api/garden/state").status_code, 401)
+        private_state = {**self.empty_state, "dreamJournal": [{
+            "id": "private-wish",
+            "wish": "Only my session should see this.",
+            "creature": "moth",
+            "createdAt": "2026-01-01T00:00:00Z",
+        }]}
+        self.assertEqual(self.save_state(self.client, 0, private_state).status_code, 200)
+
+        other = backend_app.app.test_client()
+        other.get("/api/garden/session", headers={"Origin": self.origin})
         self.assertEqual(
-            self.client.put(path, json={"revision": 0, "state": invalid}).status_code,
+            other.get("/api/garden/state").get_json(),
+            {"state": None, "revision": 0},
+        )
+        self.assertEqual(
+            other.get("/api/garden/state/1fa85f64-5717-4562-b3fc-2c963f66afa6").status_code,
+            404,
+        )
+        self.assertEqual(
+            other.put(
+                "/api/garden/state",
+                json={"revision": 0, "state": self.empty_state, "visitor_id": "1fa85f64-5717-4562-b3fc-2c963f66afa6"},
+                headers={"Origin": self.origin},
+            ).status_code,
             400,
         )
         self.assertEqual(
-            self.client.put(path, data="x" * 13_000, content_type="application/json").status_code,
+            self.client.get("/api/garden/state").get_json()["state"]["dreamJournal"][0]["wish"],
+            "Only my session should see this.",
+        )
+
+    def test_garden_reset_is_scoped_to_the_current_session(self):
+        first = {**self.empty_state, "dreamJournal": [{
+            "id": "first-wish", "wish": "First private wish", "creature": "moth",
+            "createdAt": "2026-01-01T00:00:00Z",
+        }]}
+        second = {**self.empty_state, "dreamJournal": [{
+            "id": "second-wish", "wish": "Second private wish", "creature": "fox",
+            "createdAt": "2026-01-02T00:00:00Z",
+        }]}
+        other = backend_app.app.test_client()
+        other.get("/api/garden/session", headers={"Origin": self.origin})
+        self.assertEqual(self.save_state(self.client, 0, first).status_code, 200)
+        self.assertEqual(self.save_state(other, 0, second).status_code, 200)
+        self.assertEqual(self.save_state(self.client, 1, self.empty_state).status_code, 200)
+        self.assertEqual(
+            self.client.get("/api/garden/state").get_json()["state"].get("dreamJournal", []),
+            [],
+        )
+        self.assertEqual(
+            other.get("/api/garden/state").get_json()["state"]["dreamJournal"][0]["id"],
+            "second-wish",
+        )
+
+    def test_garden_state_rejects_invalid_values_and_oversize(self):
+        invalid = json.loads(json.dumps(self.empty_state))
+        invalid["plots"][0] = {"seed": "<script>", "stage": 0}
+        self.assertEqual(
+            self.save_state(self.client, 0, invalid).status_code,
+            400,
+        )
+        self.assertEqual(
+            self.client.put(
+                "/api/garden/state",
+                data="x" * 13_000,
+                content_type="application/json",
+                headers={"Origin": self.origin},
+            ).status_code,
             413,
         )
         invalid["plots"][0] = None
         invalid["version"] = True
         self.assertEqual(
-            self.client.put(path, json={"revision": 0, "state": invalid}).status_code,
+            self.save_state(self.client, 0, invalid).status_code,
             400,
         )
+
+    def test_garden_wish_counts_are_aggregated_without_exposing_wish_text(self):
+        second_visitor = backend_app.app.test_client()
+        second_visitor.get("/api/garden/session", headers={"Origin": self.origin})
+        first_state = {
+            **self.empty_state,
+            "dreamJournal": [
+                {
+                    "id": "first-wish",
+                    "wish": "A private first wish",
+                    "creature": "moth",
+                    "createdAt": "2026-01-01T00:00:00Z",
+                },
+                {
+                    "id": "second-wish",
+                    "wish": "Another private wish",
+                    "creature": "moth",
+                    "createdAt": "2026-01-02T00:00:00Z",
+                },
+            ],
+        }
+        second_state = {
+            **self.empty_state,
+            "dreamJournal": [
+                {
+                    "id": "third-wish",
+                    "wish": "A third private wish",
+                    "creature": "fox",
+                    "createdAt": "2026-01-03T00:00:00Z",
+                },
+            ],
+        }
+        self.save_state(self.client, 0, first_state)
+        self.save_state(second_visitor, 0, second_state)
+
+        response = self.client.get("/api/garden/wish-counts")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json()["counts"]["moth"], 2)
+        self.assertEqual(response.get_json()["counts"]["fox"], 1)
+        self.assertEqual(response.get_json()["counts"]["snail"], 0)
+        self.assertNotIn("private", response.get_data(as_text=True))
+
+        self.save_state(self.client, 1, self.empty_state)
+        updated = self.client.get("/api/garden/wish-counts").get_json()["counts"]
+        self.assertEqual(updated["moth"], 0)
+        self.assertEqual(updated["fox"], 1)
 
     def test_database_failure_is_safe(self):
         with patch(
             "backend.database.psycopg.connect",
             side_effect=psycopg.OperationalError("private connection detail"),
         ):
-            response = self.client.get(f"/api/garden/state/{self.visitor_id}")
+            response = self.client.get("/api/garden/state")
         self.assertEqual(response.status_code, 503)
         self.assertNotIn("private", response.get_data(as_text=True))
 
@@ -299,7 +466,7 @@ class GuestbookAndGardenApiTests(unittest.TestCase):
             "backend.database.psycopg.connect",
             side_effect=psycopg.errors.UndefinedTable("private schema detail"),
         ):
-            response = self.client.get(f"/api/garden/state/{self.visitor_id}")
+            response = self.client.get("/api/garden/state")
         self.assertEqual(response.status_code, 503)
         self.assertNotIn("private", response.get_data(as_text=True))
 
@@ -317,7 +484,7 @@ class GuestbookAndGardenApiTests(unittest.TestCase):
             headers={"Origin": "http://localhost:5500"},
         )
         preflight = self.client.options(
-            f"/api/garden/state/{self.visitor_id}",
+            "/api/garden/state",
             headers={
                 "Origin": "http://localhost:5500",
                 "Access-Control-Request-Method": "PUT",
@@ -330,10 +497,26 @@ class GuestbookAndGardenApiTests(unittest.TestCase):
         )
         self.assertEqual(allowed.headers.get("Access-Control-Allow-Origin"), "http://localhost:5500")
         self.assertEqual(production.headers.get("Access-Control-Allow-Origin"), "https://nursery.example")
-        self.assertNotIn("Access-Control-Allow-Credentials", production.headers)
+        self.assertEqual(production.headers.get("Access-Control-Allow-Credentials"), "true")
         self.assertEqual(preflight.headers.get("Access-Control-Allow-Origin"), "http://localhost:5500")
         self.assertIn("PUT", preflight.headers.get("Access-Control-Allow-Methods", ""))
         self.assertIsNone(denied.headers.get("Access-Control-Allow-Origin"))
+
+    def test_garden_writes_require_a_trusted_origin(self):
+        response = self.client.put(
+            "/api/garden/state",
+            json={"revision": 0, "state": self.empty_state},
+            headers={"Origin": "https://untrusted.example"},
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_session_cookie_is_http_only_and_configuration_requires_strong_secret(self):
+        response = self.client.get("/api/garden/session", headers={"Origin": self.origin})
+        self.assertIn("HttpOnly", response.headers["Set-Cookie"])
+        self.assertIn("SameSite=Lax", response.headers["Set-Cookie"])
+        backend_app.app.config["SECRET_KEY"] = "short"
+        unavailable = self.client.get("/api/garden/session")
+        self.assertEqual(unavailable.status_code, 503)
 
     def test_server_binding_uses_local_default_and_render_port(self):
         with patch.dict(os.environ, {}, clear=True), patch("backend.app.app.run") as run:

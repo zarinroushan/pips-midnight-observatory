@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#17152c">
   <meta name="description" content="Plant little dreams, meet garden creatures, and keep a journal with Pip.">
-  <meta name="dear-pip-api-base" content="">
+  <meta name="dear-pip-api-base" content="https://pips-midnight-observatory-egql.onrender.com">
   <title>The Dream Garden — Dear Pip</title>
   <script src="theme.js"></script>
   <link rel="stylesheet" href="style.css">
@@ -14,6 +14,28 @@
   <script src="dream-garden.js" defer></script>
 </head>
 <body class="garden-page">
+  <div class="garden-day-atmosphere" aria-hidden="true">
+    <span class="garden-day-cloud garden-day-cloud--one">
+      <svg viewBox="0 0 120 64"><path d="M25 51h69a18 18 0 0 0 1-36 29 29 0 0 0-54-1A19 19 0 0 0 25 51Z"/></svg>
+    </span>
+    <span class="garden-day-cloud garden-day-cloud--two">
+      <svg viewBox="0 0 120 64"><path d="M25 51h69a18 18 0 0 0 1-36 29 29 0 0 0-54-1A19 19 0 0 0 25 51Z"/></svg>
+    </span>
+    <span class="garden-day-cloud garden-day-cloud--three">
+      <svg viewBox="0 0 120 64"><path d="M25 51h69a18 18 0 0 0 1-36 29 29 0 0 0-54-1A19 19 0 0 0 25 51Z"/></svg>
+    </span>
+    <span class="garden-day-butterfly garden-day-butterfly--one">
+      <svg viewBox="0 0 64 64"><path d="M29 30C21 7 4 9 8 25c2 9 10 14 20 10-8 15 1 23 8 9l-3-13zm6 0C43 7 60 9 56 25c-2 9-10 14-20 10 8 15-1 23-8 9l3-13z"/><path d="M31 27h2v18h-2z"/></svg>
+    </span>
+    <span class="garden-day-butterfly garden-day-butterfly--two">
+      <svg viewBox="0 0 64 64"><path d="M29 30C21 7 4 9 8 25c2 9 10 14 20 10-8 15 1 23 8 9l-3-13zm6 0C43 7 60 9 56 25c-2 9-10 14-20 10 8 15-1 23-8 9l3-13z"/><path d="M31 27h2v18h-2z"/></svg>
+    </span>
+    <span class="garden-day-butterfly garden-day-butterfly--three">
+      <svg viewBox="0 0 64 64"><path d="M29 30C21 7 4 9 8 25c2 9 10 14 20 10-8 15 1 23 8 9l-3-13zm6 0C43 7 60 9 56 25c-2 9-10 14-20 10 8 15-1 23-8 9l3-13z"/><path d="M31 27h2v18h-2z"/></svg>
+    </span>
+    <span class="garden-day-pollen garden-day-pollen--one">✧</span>
+    <span class="garden-day-pollen garden-day-pollen--two">✦</span>
+  </div>
   <a class="garden-skip" href="#gardenScene">Skip to the dream garden</a>
 
   <header class="garden-header">
@@ -91,34 +113,58 @@
         </g>
       </svg>
 
+      <div class="garden-wish-stars" id="gardenWishStars" role="group" aria-label="Saved wishes among the garden stars"></div>
+      <p class="garden-wish-star-count" id="gardenWishStarCount" role="status" aria-live="polite">0 wish stars</p>
       <div class="garden-plots" id="gardenPlots" aria-label="Garden planting plots"></div>
 
       <div class="garden-creatures" aria-label="Hidden garden friends">
-        <button class="garden-creature garden-creature--moth" type="button" data-creature="moth" aria-label="Discover the Moon Moth" aria-controls="gardenDreamPanel" aria-pressed="false">
-          <span aria-hidden="true">🦋</span><span class="garden-creature__label">?</span>
+        <button class="garden-creature garden-creature--moth" type="button" data-creature="moth" aria-label="Discover Lumi, Guardian of Hope" aria-controls="gardenDreamPanel" aria-pressed="false">
+          <img class="garden-creature__art" src="assets/garden-animals/Lumi.png" alt="" aria-hidden="true">
         </button>
-        <button class="garden-creature garden-creature--snail" type="button" data-creature="snail" aria-label="Discover the Dandelion Snail" aria-controls="gardenDreamPanel" aria-pressed="false">
-          <span aria-hidden="true">🐌</span><span class="garden-creature__label">?</span>
+        <button class="garden-creature garden-creature--snail" type="button" data-creature="snail" aria-label="Discover Nova, Guardian of Patience" aria-controls="gardenDreamPanel" aria-pressed="false">
+          <img class="garden-creature__art" src="assets/garden-animals/Nova.png" alt="" aria-hidden="true">
         </button>
         <button class="garden-creature garden-creature--sprite" type="button" data-creature="sprite" aria-label="Discover the Dewdrop Sprite" aria-controls="gardenDreamPanel" aria-pressed="false">
-          <span aria-hidden="true">✨</span><span class="garden-creature__label">?</span>
+          <svg class="garden-creature__dewdrop" viewBox="0 0 32 40" aria-hidden="true"><path d="M16 2C12 10 5 17 5 24a11 11 0 0 0 22 0C27 17 20 10 16 2Z"/></svg>
         </button>
-        <button class="garden-creature garden-creature--rabbit" type="button" data-creature="rabbit" aria-label="Discover Clover Rabbit" aria-controls="gardenDreamPanel" aria-pressed="false">
-          <span aria-hidden="true">🐇</span><span class="garden-creature__label">?</span>
+        <button class="garden-creature garden-creature--rabbit" type="button" data-creature="rabbit" aria-label="Discover Mochi, Guardian of Peace" aria-controls="gardenDreamPanel" aria-pressed="false">
+          <img class="garden-creature__art" src="assets/garden-animals/Mochi.png" alt="" aria-hidden="true">
         </button>
-        <button class="garden-creature garden-creature--fox" type="button" data-creature="fox" aria-label="Discover Amber Fox" aria-controls="gardenDreamPanel" aria-pressed="false">
-          <span aria-hidden="true">🦊</span><span class="garden-creature__label">?</span>
+        <button class="garden-creature garden-creature--fox" type="button" data-creature="fox" aria-label="Discover Ember, Guardian of Courage" aria-controls="gardenDreamPanel" aria-pressed="false">
+          <img class="garden-creature__art" src="assets/garden-animals/Ember.png" alt="" aria-hidden="true">
         </button>
-        <button class="garden-creature garden-creature--bird" type="button" data-creature="bird" aria-label="Discover the Lullaby Bird" aria-controls="gardenDreamPanel" aria-pressed="false">
-          <span aria-hidden="true">🐦</span><span class="garden-creature__label">?</span>
+        <button class="garden-creature garden-creature--bird" type="button" data-creature="bird" aria-label="Discover Pippa, Guardian of Joy" aria-controls="gardenDreamPanel" aria-pressed="false">
+          <img class="garden-creature__art" src="assets/garden-animals/Pippa.png" alt="" aria-hidden="true">
         </button>
       </div>
       <p class="garden-scene-hint">Look closely for tiny garden friends ✧</p>
     </section>
 
+    <section class="garden-wish-detail" id="gardenWishDetail" aria-labelledby="gardenWishDetailTitle" hidden>
+      <div class="garden-wish-detail__heading">
+        <div>
+          <p class="garden-eyebrow">A WISH TUCKED AMONG THE STARS</p>
+          <h2 id="gardenWishDetailTitle" tabindex="-1">A little dream remembered</h2>
+        </div>
+        <button class="garden-wish-detail__close" id="gardenWishDetailClose" type="button" aria-label="Close saved dream details">×</button>
+      </div>
+      <p class="garden-wish-detail__dream" id="gardenWishDetailDream"></p>
+      <p class="garden-wish-detail__animal"><img id="gardenWishDetailIcon" alt="" hidden><span id="gardenWishDetailEmoji" aria-hidden="true" hidden></span><span id="gardenWishDetailAnimal"></span></p>
+      <time class="garden-wish-detail__date" id="gardenWishDetailDate" hidden></time>
+    </section>
+
     <section class="garden-dream-panel" id="gardenDreamPanel" aria-labelledby="gardenDreamName" aria-live="polite" aria-atomic="true" hidden>
-      <p class="garden-eyebrow">A WOODLAND FRIEND'S FICTIONAL DREAM</p>
-      <h2 id="gardenDreamName"></h2>
+      <p class="garden-eyebrow">A GARDEN FRIEND'S STORY</p>
+      <div class="garden-guardian-profile">
+        <img id="gardenDreamPortrait" alt="" hidden>
+        <span id="gardenDreamEmoji" aria-hidden="true" hidden></span>
+        <div>
+          <h2 id="gardenDreamName"></h2>
+          <p class="garden-guardian-title" id="gardenDreamGuardianTitle"></p>
+          <p class="garden-guardian-wish-count" id="gardenDreamWishCount" role="status" aria-live="polite">Loading shared wishes…</p>
+          <p class="garden-guardian-description" id="gardenDreamDescription"></p>
+        </div>
+      </div>
       <p class="garden-dream-personality" id="gardenDreamPersonality"></p>
       <div class="garden-dream-panel__columns">
         <div>
@@ -183,14 +229,31 @@
         <p class="garden-eyebrow">JUST FOR THIS GARDEN</p>
         <h2 id="gardenPrivateDreamTitle">A private wish for Pip</h2>
         <p>Saved to this garden’s existing private progress record. It is separate from the public guestbook.</p>
+        <div class="garden-pip-companion" aria-label="Pip's nighttime reminder">
+          <img src="assets/pip-garden.png" alt="Pip holding a glowing moon">
+          <div class="garden-pip-message" id="gardenPipGreeting" hidden>
+            <strong>A little nighttime magic <span aria-hidden="true">🌙</span></strong>
+            <p>The Dream Garden is awake at night! Your wishes become stars beneath the moon. Switch to night mode to see your collected stars sparkle.</p>
+          </div>
+        </div>
       </div>
       <form id="gardenPrivateDreamForm">
         <label for="gardenPrivateDreamCreature">Choose a garden friend</label>
         <select id="gardenPrivateDreamCreature" required>
-          <option value="moth">Moon Moth</option><option value="snail">Dandelion Snail</option>
-          <option value="sprite">Dewdrop Sprite</option><option value="rabbit">Clover Rabbit</option>
-          <option value="fox">Amber Fox</option><option value="bird">Lullaby Bird</option>
+          <option value="moth">Lumi — Guardian of Hope</option><option value="snail">Nova — Guardian of Patience</option>
+          <option value="sprite">Dewdrop Sprite</option><option value="rabbit">Mochi — Guardian of Peace</option>
+          <option value="fox">Ember — Guardian of Courage</option><option value="bird">Pippa — Guardian of Joy</option>
         </select>
+        <div class="garden-selected-guardian" id="gardenSelectedGuardian" aria-live="polite">
+          <img id="gardenSelectedGuardianImage" alt="">
+          <span id="gardenSelectedGuardianEmoji" aria-hidden="true" hidden></span>
+          <div>
+            <strong id="gardenSelectedGuardianName"></strong>
+            <small id="gardenSelectedGuardianTitle"></small>
+            <small class="garden-selected-guardian__wish-count" id="gardenSelectedGuardianWishCount" role="status" aria-live="polite">Loading shared wishes…</small>
+            <p id="gardenSelectedGuardianDescription"></p>
+          </div>
+        </div>
         <label for="gardenPrivateDream">Your wish <span>(up to 250 characters)</span></label>
         <textarea id="gardenPrivateDream" maxlength="250" rows="3" required></textarea>
         <button type="submit">Tuck it into the garden</button>
@@ -215,10 +278,10 @@
       <div class="garden-guestbook__entries" aria-labelledby="gardenGuestbookEntriesTitle">
         <h3 id="gardenGuestbookEntriesTitle">Dreams shared with Pip</h3>
         <ul class="garden-guestbook__list" id="gardenGuestbookEntries" aria-live="polite">
-          <li class="garden-guestbook__empty">Approved dreams will appear here.</li>
+          <li class="garden-guestbook__empty">Loading approved dreams…</li>
         </ul>
       </div>
-      <p class="garden-guestbook__privacy">Garden progress is associated with an unguessable browser ID stored on this device. It is not account security or private from anyone who obtains that ID.</p>
+      <p class="garden-guestbook__privacy">Private garden progress is tied to a secure browser session. Keep this browser's cookies to return to the same garden; it is separate from the public guestbook.</p>
     </section>
 
     <aside class="garden-companion" aria-label="Pip is gardening with you">
