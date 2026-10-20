@@ -13,9 +13,14 @@
   <script src="sounds.js" defer></script>
   <script src="visitor-progress.js" defer></script>
   <script src="dream-atlas.js" defer></script>
-  <script src="dream-atlas-data.js" defer></script>
+  <script src="dream-atlas-adventure.js" defer></script>
 </head>
 <body class="atlas-page">
+  <div class="atlas-day-atmosphere" aria-hidden="true">
+    <span class="atlas-day-atmosphere__cloud">☁</span>
+    <span class="atlas-day-atmosphere__butterfly">🦋</span>
+    <span class="atlas-day-atmosphere__sparkle">✧</span>
+  </div>
   <a class="atlas-skip" href="#atlasChart">Skip to the star chart</a>
 
   <header class="atlas-header">
@@ -76,11 +81,11 @@
               <circle cx="55" cy="276" r="1.7"/><circle cx="547" cy="73" r="1.6"/><circle cx="947" cy="371" r="1.7"/>
             </g>
             <g class="atlas-constellation-lines" fill="none" stroke="url(#atlas-line)" stroke-width="2.4" stroke-linecap="round" filter="url(#atlas-glow)">
-              <path d="M160 199 226 160 296 184 322 254 270 303"/>
-              <path d="M457 194 510 142 567 172 608 245 560 287 493 266Z"/>
-              <path d="M739 207 790 165 835 212 809 270 751 263Z"/>
-              <path d="M262 431 323 385 381 423 360 488 303 503Z"/>
-              <path d="M636 427 690 381 752 405 777 469 714 504 657 480Z"/>
+              <path data-object="lantern" d="M160 199 226 160 296 184 322 254 270 303"/>
+              <path data-object="sail" d="M457 194 510 142 567 172 608 245 560 287 493 266Z"/>
+              <path data-object="whale" d="M739 207 790 165 835 212 809 270 751 263Z"/>
+              <path data-object="garden" d="M262 431 323 385 381 423 360 488 303 503Z"/>
+              <path data-object="bell" d="M636 427 690 381 752 405 777 469 714 504 657 480Z"/>
             </g>
             <g fill="#ffe8a6" filter="url(#atlas-glow)">
               <circle cx="160" cy="199" r="4"/><circle cx="226" cy="160" r="4"/><circle cx="296" cy="184" r="4"/><circle cx="322" cy="254" r="4"/><circle cx="270" cy="303" r="4"/>
@@ -124,7 +129,6 @@
           <h2 id="atlasObjectName">Choose a constellation</h2>
           <p id="atlasDescription">The sky is full of small wonders. Select a star pattern to open its page in Pip's atlas.</p>
           <p class="atlas-discovery" id="atlasDiscovery">Every pattern holds a little discovery.</p>
-          <button class="atlas-discover" id="atlasDiscover" type="button" disabled>Discover this light</button>
           <p class="atlas-status" id="atlasStatus" role="status" aria-live="polite"></p>
         </section>
 
@@ -139,20 +143,16 @@
         <section class="atlas-game" aria-labelledby="atlasGameTitle">
           <p class="atlas-eyebrow">A TINY SKY PUZZLE</p>
           <h2 id="atlasGameTitle">Connect the little lights</h2>
-          <p>Choose each star in order to trace Pip's sleepy fox.</p>
-          <div class="atlas-game__stars" role="group" aria-label="Connect stars in order: one, two, three, four">
-            <button type="button" class="atlas-game__star" data-step="1" aria-label="Connect star one">1</button>
-            <button type="button" class="atlas-game__star" data-step="2" aria-label="Connect star two">2</button>
-            <button type="button" class="atlas-game__star" data-step="3" aria-label="Connect star three">3</button>
-            <button type="button" class="atlas-game__star" data-step="4" aria-label="Connect star four">4</button>
+          <p id="atlasGameInstructions">Choose a constellation on the map to connect its little lights.</p>
+          <div class="atlas-game__board" id="atlasGameBoard" hidden>
+            <svg class="atlas-game__result" viewBox="0 0 320 190" aria-hidden="true" focusable="false">
+              <polyline class="atlas-game__path" id="atlasGamePath" points=""/>
+              <g class="atlas-game__sparkles" id="atlasGameSparkles"></g>
+            </svg>
+            <div class="atlas-game__stars" id="atlasGameStars" role="group" aria-label="Choose a light in the constellation"></div>
           </div>
-          <svg class="atlas-game__result" viewBox="0 0 300 118" role="img" aria-label="A little fox constellation appears when all four stars are connected">
-            <path class="atlas-game__path" pathLength="1" d="M40 83 103 34 167 73 244 29"/>
-            <g class="atlas-game__fox" fill="#ffe8a6"><circle cx="40" cy="83" r="5"/><circle cx="103" cy="34" r="5"/><circle cx="167" cy="73" r="5"/><circle cx="244" cy="29" r="5"/></g>
-            <text class="atlas-game__completion" x="150" y="111" text-anchor="middle">THE SLEEPY FOX</text>
-          </svg>
-          <p class="atlas-game__message" id="atlasGameMessage" role="status" aria-live="polite">Tap 1, then 2, 3, and 4 to connect the stars.</p>
-          <button class="atlas-game__reset" id="atlasGameReset" type="button">Reset constellation</button>
+          <p class="atlas-game__message" id="atlasGameMessage" role="status" aria-live="polite">Choose a constellation above to begin.</p>
+          <button class="atlas-game__reset" id="atlasGameReset" type="button" disabled>Reset constellation</button>
         </section>
       </aside>
     </div>
@@ -173,96 +173,68 @@
     </aside>
   </main>
 
-  <section class="atlas-skills" aria-labelledby="atlasSkillsTitle">
-    <p class="atlas-eyebrow">REPOSITORY EVIDENCE</p>
-    <h2 id="atlasSkillsTitle">Skills in practice</h2>
-    <p>Skills come from saved repository evidence or owner-added notes. Presence in a repository does not measure proficiency.</p>
-    <p class="atlas-data-status" id="atlasDataStatus" role="status" aria-live="polite">Loading saved skills and projects…</p>
-    <div class="atlas-skills__constellation" id="atlasSkillsList" role="group" aria-label="Choose a saved skill"></div>
-    <article class="atlas-skill-note" id="atlasSkillNote" aria-live="polite" aria-atomic="true">
-      <p class="atlas-eyebrow">FIELD NOTE</p>
-      <h3 id="atlasSkillName">Choose a technology</h3>
-      <p id="atlasSkillStage">Evidence status: not assessed</p>
-      <p id="atlasSkillLearning">Choose a saved skill to view its category, source, and supporting evidence.</p>
-      <ul class="atlas-evidence-list" id="atlasSkillEvidence"></ul>
-      <div class="atlas-related-projects" id="atlasSkillProjects"></div>
-    </article>
-    <section class="atlas-project-directory" id="atlasProjectDirectory" aria-labelledby="atlasProjectDirectoryTitle" hidden>
-      <h3 id="atlasProjectDirectoryTitle">Saved projects</h3>
-      <div class="atlas-project-directory__list" id="atlasProjectsList"></div>
-    </section>
-    <article class="atlas-project-details" id="atlasProjectDetails" aria-live="polite" hidden>
-      <p class="atlas-eyebrow">PROJECT RECORD</p>
-      <h3 id="atlasProjectName"></h3>
-      <p id="atlasProjectDescription"></p>
-      <p class="atlas-project-status" id="atlasProjectStatus"></p>
-      <a id="atlasProjectRepository" hidden target="_blank" rel="noopener noreferrer">Open repository</a>
-      <ul class="atlas-project-skill-list" id="atlasProjectSkills"></ul>
-    </article>
-    <div class="atlas-empty-project" id="atlasProjectEmpty" hidden>
-      <p>No project records are saved yet. An owner can register a verified project and associate its technologies.</p>
-      <button class="atlas-owner-jump" type="button" data-owner-jump>Open owner tools</button>
+  <section class="atlas-adventure" aria-labelledby="adventureTitle">
+    <header class="atlas-adventure__heading">
+      <p class="atlas-eyebrow">A LITTLE SIDE-SCROLLING STORY</p>
+      <h2 id="adventureTitle">Pip's Wishbound Adventure</h2>
+      <p>Guide Pip through the clouds, gather the golden wishes, and find the destination you dream up.</p>
+    </header>
+
+    <div class="atlas-adventure__hud" aria-label="Adventure progress">
+      <p id="adventureDestination">Destination: not chosen</p>
+      <p><span aria-hidden="true">✦</span> <span id="adventureStars">0 / 8 stars</span></p>
+      <p id="adventureLives" aria-label="Lives remaining">5 wishes</p>
+      <button class="atlas-adventure__button" id="adventurePause" type="button" disabled>Pause</button>
+      <button class="atlas-adventure__button" id="adventureRestart" type="button" disabled>Restart</button>
+      <button class="atlas-adventure__button" id="adventureNewWish" type="button">New Wish</button>
+    </div>
+    <div class="atlas-adventure__journey">
+      <label for="adventureJourney">Journey to your wish</label>
+      <progress id="adventureJourney" max="5660" value="0">0%</progress>
     </div>
 
-    <section class="atlas-owner-panel" aria-labelledby="atlasOwnerTitle">
-      <p class="atlas-eyebrow">PRIVATE OWNER ACTIONS</p>
-      <h3 id="atlasOwnerTitle">Manage repository records</h3>
-      <p>Management actions require the server's private owner token. It stays in this tab's memory and is sent only to this API.</p>
-      <form id="atlasUnlockForm" class="atlas-owner-form">
-        <label for="atlasOwnerToken">Owner token</label>
-        <input id="atlasOwnerToken" type="password" autocomplete="off" required minlength="32" maxlength="512">
-        <button class="atlas-owner-button" type="submit">Unlock owner tools</button>
+    <div class="atlas-adventure__stage">
+      <canvas id="adventureCanvas" width="960" height="540" tabindex="0" aria-label="Pip's Wishbound Adventure game area" aria-describedby="adventureInstructions">
+        Your browser does not support the canvas game. You can still read the instructions and try again in a supported browser.
+      </canvas>
+      <form class="atlas-adventure__screen atlas-adventure__screen--start" id="adventureStartScreen">
+        <p class="atlas-eyebrow">WHERE SHALL WE GO?</p>
+        <h3>Choose a wishbound destination</h3>
+        <label for="adventureGoal">Pip's destination</label>
+        <input id="adventureGoal" name="goal" type="text" maxlength="42" placeholder="The Moon Palace" aria-describedby="adventureGoalHint" required autocomplete="off">
+        <p id="adventureGoalHint" class="atlas-adventure__hint">Choose a wish up to 42 characters long.</p>
+        <button class="atlas-adventure__button atlas-adventure__button--primary" type="submit">Begin the adventure</button>
       </form>
-      <p class="atlas-owner-status" id="atlasOwnerStatus" role="status" aria-live="polite"></p>
-
-      <div class="atlas-owner-controls" id="atlasOwnerControls" hidden>
-        <section class="atlas-owner-tool" aria-labelledby="atlasScanTitle">
-          <h4 id="atlasScanTitle">Scan this repository</h4>
-          <p>Preview detected technologies and file evidence before importing selected results.</p>
-          <label for="atlasScanProject">Associate evidence with a project (optional)</label>
-          <select id="atlasScanProject"><option value="">No project association</option></select>
-          <button class="atlas-owner-button" id="atlasScanButton" type="button">Preview repository scan</button>
-          <p class="atlas-owner-status" id="atlasScanStatus" role="status" aria-live="polite"></p>
-          <div class="atlas-scan-preview" id="atlasScanPreview" hidden>
-            <p id="atlasScanSummary"></p>
-            <div class="atlas-scan-candidates" id="atlasScanCandidates"></div>
-            <button class="atlas-owner-button" id="atlasImportButton" type="button">Import selected evidence</button>
-          </div>
-        </section>
-
-        <section class="atlas-owner-tool" aria-labelledby="atlasManualTitle">
-          <h4 id="atlasManualTitle">Add Skills Manually</h4>
-          <label for="atlasManualSkills">Paste skill names, one per line or separated by commas</label>
-          <textarea id="atlasManualSkills" rows="5" maxlength="7000" placeholder="HTML&#10;CSS&#10;JavaScript&#10;Python"></textarea>
-          <div class="atlas-manual-preview" id="atlasManualPreview" aria-live="polite"></div>
-          <label for="atlasManualProject">Associate with a project (optional)</label>
-          <select id="atlasManualProject"><option value="">No project association</option></select>
-          <button class="atlas-owner-button" id="atlasSaveSkills" type="button" disabled>Save Skills</button>
-          <p class="atlas-owner-status" id="atlasManualStatus" role="status" aria-live="polite"></p>
-        </section>
-
-        <section class="atlas-owner-tool" aria-labelledby="atlasProjectFormTitle">
-          <h4 id="atlasProjectFormTitle">Register a project</h4>
-          <form id="atlasProjectForm" class="atlas-owner-form">
-            <label for="atlasProjectInputName">Project name</label>
-            <input id="atlasProjectInputName" name="name" required maxlength="120">
-            <label for="atlasProjectInputDescription">Description</label>
-            <textarea id="atlasProjectInputDescription" name="description" rows="3" maxlength="2000"></textarea>
-            <label for="atlasProjectInputUrl">Public repository URL (optional)</label>
-            <input id="atlasProjectInputUrl" name="repository_url" type="url" maxlength="2048" placeholder="https://…">
-            <label for="atlasProjectInputStatus">Project status</label>
-            <select id="atlasProjectInputStatus" name="status">
-              <option value="active">Active</option><option value="in_progress">In progress</option>
-              <option value="completed">Completed</option><option value="archived">Archived</option>
-            </select>
-            <label for="atlasProjectInputSkills">Technologies to associate (optional)</label>
-            <textarea id="atlasProjectInputSkills" name="skills" rows="3" placeholder="Python, Flask"></textarea>
-            <button class="atlas-owner-button" type="submit">Save project</button>
-          </form>
-          <p class="atlas-owner-status" id="atlasProjectFormStatus" role="status" aria-live="polite"></p>
-        </section>
+      <div class="atlas-adventure__screen atlas-adventure__screen--pause" id="adventurePauseScreen" hidden>
+        <p class="atlas-eyebrow">A MOMENT TO REST</p>
+        <h3>Adventure paused</h3>
+        <button class="atlas-adventure__button atlas-adventure__button--primary" id="adventureResume" type="button">Resume adventure</button>
+        <button class="atlas-adventure__button" type="button" data-adventure-new-wish>New Wish</button>
       </div>
-    </section>
+      <div class="atlas-adventure__screen atlas-adventure__screen--victory" id="adventureVictoryScreen" hidden>
+        <p class="atlas-eyebrow">WISH FULFILLED</p>
+        <h3 id="adventureVictoryTitle">Pip reached the destination!</h3>
+        <p id="adventureVictoryMessage"></p>
+        <p id="adventureAchievement"></p>
+        <button class="atlas-adventure__button atlas-adventure__button--primary" id="adventurePlayAgain" type="button">Play again</button>
+        <button class="atlas-adventure__button" type="button" data-adventure-new-wish>New Wish</button>
+      </div>
+      <div class="atlas-adventure__screen atlas-adventure__screen--gameover" id="adventureGameoverScreen" hidden>
+        <p class="atlas-eyebrow">A SOFT LANDING</p>
+        <h3>Let's try that journey again</h3>
+        <button class="atlas-adventure__button atlas-adventure__button--primary" id="adventureTryAgain" type="button">Restart adventure</button>
+        <button class="atlas-adventure__button" type="button" data-adventure-new-wish>New Wish</button>
+      </div>
+    </div>
+
+    <div class="atlas-adventure__mobile-controls" aria-label="Touch game controls">
+      <button class="atlas-adventure__control" type="button" data-adventure-control="left" aria-label="Move Pip left">←</button>
+      <button class="atlas-adventure__control" type="button" data-adventure-control="right" aria-label="Move Pip right">→</button>
+      <button class="atlas-adventure__control atlas-adventure__control--jump" type="button" data-adventure-control="jump" aria-label="Make Pip jump">Jump</button>
+    </div>
+    <p class="atlas-adventure__instructions" id="adventureInstructions">Move with ← → or A / D. Jump with Space or ↑. Gather the stars, avoid the wandering night moths, and reach your destination.</p>
+    <p class="atlas-adventure__status" id="adventureStatus" role="status" aria-live="polite">Enter a destination to begin your adventure.</p>
+    <p class="atlas-adventure__achievement" id="adventureProgress" hidden></p>
   </section>
   <footer class="atlas-footer">
     <span>KEEP FOLLOWING THE LITTLE LIGHTS</span>

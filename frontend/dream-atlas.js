@@ -30,32 +30,249 @@ const objectButtons = [...document.querySelectorAll('.atlas-object')];
 const objectName = document.querySelector('#atlasObjectName');
 const description = document.querySelector('#atlasDescription');
 const discovery = document.querySelector('#atlasDiscovery');
-const discoverButton = document.querySelector('#atlasDiscover');
 const discoveryStatus = document.querySelector('#atlasStatus');
 const journalList = document.querySelector('#atlasJournalList');
 const countLabel = document.querySelector('#atlasCount');
 const journalCount = document.querySelector('#atlasJournalCount');
 const discovered = new Set();
 const atlasStorageKey = 'dear-pip-dream-atlas-v1';
+let atlasStorageAvailable = true;
 let puzzleComplete = false;
+let puzzleConstellation = null;
 let atlasProgressChangeVersion = 0;
 let selectedObject = null;
+const game = document.querySelector('.atlas-game');
+const gameBoard = document.querySelector('#atlasGameBoard');
+const gameStarsContainer = document.querySelector('#atlasGameStars');
+const gamePath = document.querySelector('#atlasGamePath');
+const gameSparkles = document.querySelector('#atlasGameSparkles');
+const gameInstructions = document.querySelector('#atlasGameInstructions');
+const gameMessage = document.querySelector('#atlasGameMessage');
+const gameReset = document.querySelector('#atlasGameReset');
+const constellationPaths = new Map(
+  [...document.querySelectorAll('.atlas-constellation-lines path[data-object]')]
+    .map((path) => [path.dataset.object, path]),
+);
+let activePattern = null;
+let nextStar = 1;
+let puzzleMistakeTimer = 0;
 
 function atlasProgressSnapshot() {
-  return { version: 1, discovered: [...discovered], puzzleComplete };
+  return { version: 1, discovered: [...discovered], puzzleComplete, puzzleConstellation };
 }
 
-function saveAtlasProgress() {
+function readConstellationPattern(objectId) {
+  const path = constellationPaths.get(objectId);
+  if (!path) return null;
+
+  const definition = path.getAttribute('d') || '';
+  const points = [...definition.matchAll(/(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)/g)]
+    .map((match) => ({ x: Number(match[1]), y: Number(match[2]) }));
+  if (points.length < 2) return null;
+  return { points, closed: /z/i.test(definition) };
+}
+
+function positionPuzzleStars(points) {
+  const bounds = points.reduce((result, point) => ({
+    minX: Math.min(result.minX, point.x),
+    maxX: Math.max(result.maxX, point.x),
+    minY: Math.min(result.minY, point.y),
+    maxY: Math.max(result.maxY, point.y),
+  }), { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity });
+  const width = bounds.maxX - bounds.minX;
+  const height = bounds.maxY - bounds.minY;
+  const left = 48;
+  const right = 272;
+  const top = 34;
+  const bottom = 156;
+
+  return points.map((point) => ({
+    x: left + ((point.x - bounds.minX) / width) * (right - left),
+    y: top + ((point.y - bounds.minY) / height) * (bottom - top),
+  }));
+}
+
+function renderConnectedPath() {
+  if (!activePattern) {
+    gamePath.setAttribute('points', '');
+    return;
+  }
+  const connected = activePattern.points.slice(0, nextStar - 1);
+  if (game.classList.contains('is-complete') && activePattern.closed) {
+    connected.push(activePattern.points[0]);
+  }
+  gamePath.setAttribute('points', connected.map(({ x, y }) => `${x},${y}`).join(' '));
+}
+
+function resetPuzzle(message = 'Tap the lights in order to connect this constellation.') {
+  nextStar = 1;
+  game.classList.remove('has-progress', 'is-complete', 'has-mistake');
+  gameStarsContainer.querySelectorAll('.atlas-game__star').forEach((star) => {
+    star.classList.remove('is-connected', 'is-mistake');
+    star.setAttribute('aria-pressed', 'false');
+    star.removeAttribute('aria-current');
+  });
+  gameStarsContainer.querySelector('.atlas-game__star')?.setAttribute('aria-current', 'step');
+  gameSparkles.replaceChildren();
+  renderConnectedPath();
+  gameMessage.textContent = message;
+}
+
+function completePuzzle() {
+  const newlyDiscovered = !discovered.has(selectedObject);
+  puzzleComplete = true;
+  puzzleConstellation = selectedObject;
+  discovered.add(selectedObject);
+  renderDiscoveryJournal();
+  game.classList.add('is-complete');
+  renderConnectedPath();
+  const lastPoint = activePattern.points[activePattern.points.length - 1];
+  const sparkle = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  sparkle.classList.add('atlas-game__sparkle');
+  sparkle.setAttribute('x', String(lastPoint.x));
+  sparkle.setAttribute('y', String(lastPoint.y - 18));
+  sparkle.textContent = '✦';
+  gameSparkles.append(sparkle);
+  gameMessage.textContent = newlyDiscovered
+    ? `${celestialObjects[selectedObject].name} discovered! It has joined your field notes.`
+    : `${celestialObjects[selectedObject].name} is shining in your field notes!`;
+  saveAtlasProgress({ reportDiscovery: newlyDiscovered });
+  window.DearPipSounds?.play('constellation-discover');
+}
+
+function selectPuzzle(objectId) {
+  const changed = selectedObject !== objectId;
+  const wasCompleted = puzzleComplete;
+  const restoreCompletion = changed && puzzleComplete && puzzleConstellation === objectId;
+  selectedObject = objectId;
+  if (!changed) return;
+
+  const object = celestialObjects[objectId];
+  const sourcePattern = readConstellationPattern(objectId);
+  if (!object || !sourcePattern) {
+    console.error(`Could not find the star path for Dream Atlas constellation "${objectId}".`);
+    return;
+  }
+
+  activePattern = {
+    ...sourcePattern,
+    points: positionPuzzleStars(sourcePattern.points),
+  };
+  gameBoard.hidden = false;
+  gameReset.disabled = false;
+  gameInstructions.textContent = `Connect ${activePattern.points.length} lights to trace ${object.name}.`;
+  gameStarsContainer.setAttribute('aria-label', `Connect the lights for ${object.name} in order`);
+  gameStarsContainer.replaceChildren();
+  activePattern.points.forEach((point, index) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'atlas-game__star';
+    button.dataset.step = String(index + 1);
+    button.textContent = String(index + 1);
+    button.setAttribute('aria-label', `Connect star ${index + 1} of ${activePattern.points.length} in ${object.name}`);
+    button.setAttribute('aria-pressed', 'false');
+    button.style.left = `${(point.x / 320) * 100}%`;
+    button.style.top = `${(point.y / 190) * 100}%`;
+    button.addEventListener('click', () => {
+      const step = Number(button.dataset.step);
+      if (game.classList.contains('is-complete')) return;
+
+      if (step !== nextStar) {
+        resetPuzzle('No worries, the lights got tangled. Let’s try again from star 1.');
+        if (step === 1) {
+          button.classList.add('is-connected');
+          button.setAttribute('aria-pressed', 'true');
+          button.setAttribute('aria-current', 'step');
+          game.classList.add('has-progress');
+          nextStar = 2;
+          renderConnectedPath();
+          gameMessage.textContent = 'No worries, the lights got tangled. Star 1 is ready; continue with star 2.';
+        } else {
+          button.classList.add('is-mistake');
+          window.clearTimeout(puzzleMistakeTimer);
+          puzzleMistakeTimer = window.setTimeout(() => button.classList.remove('is-mistake'), 500);
+        }
+        return;
+      }
+
+      button.classList.add('is-connected');
+      button.setAttribute('aria-pressed', 'true');
+      button.removeAttribute('aria-current');
+      nextStar += 1;
+      const followingStar = gameStarsContainer.querySelector(`[data-step="${nextStar}"]`);
+      followingStar?.setAttribute('aria-current', 'step');
+      game.classList.add('has-progress');
+      renderConnectedPath();
+      if (nextStar > activePattern.points.length) {
+        completePuzzle();
+      } else {
+        gameMessage.textContent = `Star ${step} connected. Now find star ${nextStar}.`;
+      }
+    });
+    gameStarsContainer.append(button);
+  });
+
+  puzzleComplete = restoreCompletion;
+  puzzleConstellation = objectId;
+  resetPuzzle(restoreCompletion
+    ? `${object.name} is already shining in the sky.`
+    : `Tap star 1 to begin connecting ${object.name}.`);
+  if (restoreCompletion) {
+    nextStar = activePattern.points.length + 1;
+    gameStarsContainer.querySelectorAll('.atlas-game__star').forEach((star) => {
+      star.classList.add('is-connected');
+      star.setAttribute('aria-pressed', 'true');
+    });
+    game.classList.add('has-progress', 'is-complete');
+    renderConnectedPath();
+    const lastPoint = activePattern.points[activePattern.points.length - 1];
+    const sparkle = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    sparkle.classList.add('atlas-game__sparkle');
+    sparkle.setAttribute('x', String(lastPoint.x));
+    sparkle.setAttribute('y', String(lastPoint.y - 18));
+    sparkle.textContent = '✦';
+    gameSparkles.append(sparkle);
+  }
+  gameReset.setAttribute('aria-label', `Reset the ${object.name} puzzle`);
+  if (wasCompleted && !restoreCompletion) saveAtlasProgress();
+}
+
+function saveAtlasProgress({ reportDiscovery = false } = {}) {
   const progress = atlasProgressSnapshot();
   atlasProgressChangeVersion += 1;
+  let localSaved = false;
   try {
     localStorage.setItem(atlasStorageKey, JSON.stringify(progress));
+    atlasStorageAvailable = true;
+    localSaved = true;
   } catch (error) {
-    discoveryStatus.textContent = 'Progress is noted for this visit; browser storage is unavailable.';
+    atlasStorageAvailable = false;
     console.error('Could not save this device’s Dream Atlas notes:', error);
   }
-  window.DearPipProgress?.save('atlas', progress).catch((error) => {
+  if (!reportDiscovery) {
+    window.DearPipProgress?.save('atlas', progress).catch((error) => {
+      console.error('Could not sync Dream Atlas activity progress:', error);
+    });
+    return;
+  }
+
+  discoveryStatus.textContent = 'Added to your field notes. Saving progress…';
+  if (!window.DearPipProgress) {
+    discoveryStatus.textContent = localSaved
+      ? 'Discovered and saved on this device. Online progress is unavailable.'
+      : 'Discovered for this visit only; browser and online storage are unavailable.';
+    return;
+  }
+
+  window.DearPipProgress.save('atlas', progress).then(() => {
+    discoveryStatus.textContent = localSaved
+      ? 'Discovered and saved on this device and in visitor progress.'
+      : 'Discovered and saved in visitor progress; browser storage is unavailable.';
+  }).catch((error) => {
     console.error('Could not sync Dream Atlas activity progress:', error);
+    discoveryStatus.textContent = localSaved
+      ? 'Discovered and saved on this device; online progress could not be saved.'
+      : 'Discovered for this visit only; browser and online storage are unavailable.';
   });
 }
 function renderDiscoveryJournal() {
@@ -81,9 +298,13 @@ try {
     saved.discovered.forEach((id) => {
       if (Object.hasOwn(celestialObjects, id)) discovered.add(id);
     });
-    puzzleComplete = saved.puzzleComplete === true;
+    puzzleConstellation = Object.hasOwn(celestialObjects, saved.puzzleConstellation)
+      ? saved.puzzleConstellation
+      : null;
+    puzzleComplete = saved.puzzleComplete === true && puzzleConstellation !== null;
   }
 } catch (error) {
+  atlasStorageAvailable = false;
   console.error('Could not read this device’s Dream Atlas notes:', error);
 }
 renderDiscoveryJournal();
@@ -92,7 +313,7 @@ objectButtons.forEach((button) => {
   button.addEventListener('click', () => {
     const object = celestialObjects[button.dataset.object];
     if (!object) return;
-    selectedObject = button.dataset.object;
+    selectPuzzle(button.dataset.object);
 
     objectButtons.forEach((item) => {
       const isSelected = item === button;
@@ -103,100 +324,65 @@ objectButtons.forEach((button) => {
     objectName.textContent = object.name;
     description.textContent = object.description;
     discovery.textContent = object.discovery;
-    discoverButton.disabled = discovered.has(selectedObject);
-    discoverButton.textContent = discovered.has(selectedObject) ? 'Already discovered' : 'Discover this light';
     discoveryStatus.textContent = discovered.has(selectedObject)
-      ? 'This little light is already in your field notes.'
+      ? 'This constellation is already in your field notes.'
       : '';
   });
 });
 
-discoverButton.addEventListener('click', () => {
-  if (!selectedObject) return;
-  const object = celestialObjects[selectedObject];
-  if (!object || discovered.has(selectedObject)) return;
-
-  window.DearPipSounds?.play('constellation-discover');
-  discovered.add(selectedObject);
-  renderDiscoveryJournal();
-  saveAtlasProgress();
-  discoverButton.textContent = 'Already discovered';
-  discoverButton.disabled = true;
-  discoveryStatus.textContent = `${object.name} added to your field notes.`;
-});
-
-const gameStars = [...document.querySelectorAll('.atlas-game__star')];
-const game = document.querySelector('.atlas-game');
-const gameMessage = document.querySelector('#atlasGameMessage');
-let nextStar = 1;
-
-gameStars.forEach((button) => {
-  button.addEventListener('click', () => {
-    const step = Number(button.dataset.step);
-    if (game.classList.contains('is-complete')) return;
-
-    if (step !== nextStar) {
-      nextStar = 1;
-      gameStars.forEach((star) => star.classList.remove('is-connected'));
-      game.classList.remove('has-progress');
-      gameMessage.textContent = 'Oops, the stars got a little tangled. Begin again with star 1.';
-      if (step === 1) {
-        button.classList.add('is-connected');
-        game.classList.add('has-progress');
-        nextStar = 2;
-      }
-      return;
-    }
-
-    button.classList.add('is-connected');
-    game.classList.add('has-progress');
-    nextStar += 1;
-    if (nextStar > gameStars.length) {
-      game.classList.add('is-complete');
-      puzzleComplete = true;
-      saveAtlasProgress();
-      gameMessage.textContent = 'You found it! The Sleepy Fox is shining in the sky.';
-      window.DearPipSounds?.play('constellation-discover');
-    } else {
-      gameMessage.textContent = `Star ${step} connected. Now find star ${nextStar}.`;
-    }
-  });
-});
-
-document.querySelector('#atlasGameReset').addEventListener('click', () => {
-  nextStar = 1;
-  game.classList.remove('has-progress', 'is-complete');
-  gameStars.forEach((star) => star.classList.remove('is-connected'));
-  gameMessage.textContent = 'Constellation reset. Tap 1, then 2, 3, and 4 to connect the stars.';
-  gameStars[0].focus({ preventScroll: true });
+gameReset.addEventListener('click', () => {
+  const wasCompleted = puzzleComplete;
+  puzzleComplete = false;
+  puzzleConstellation = selectedObject;
+  resetPuzzle(`Puzzle reset. Tap star 1 to connect ${celestialObjects[selectedObject].name}.`);
+  if (wasCompleted) saveAtlasProgress();
+  gameStarsContainer.querySelector('.atlas-game__star')?.focus({ preventScroll: true });
 });
 
 if (window.DearPipProgress) {
   const versionAtLoad = atlasProgressChangeVersion;
-  window.DearPipProgress.load('atlas', atlasProgressSnapshot()).then(({ data }) => {
+  window.DearPipProgress.load('atlas', atlasProgressSnapshot()).then(({ data, persistent }) => {
     const remote = data || atlasProgressSnapshot();
     if (atlasProgressChangeVersion !== versionAtLoad) {
       remote.discovered = [...new Set([...remote.discovered, ...discovered])];
-      remote.puzzleComplete ||= puzzleComplete;
+      remote.puzzleComplete = puzzleComplete;
+      remote.puzzleConstellation = puzzleConstellation;
     }
     discovered.clear();
     remote.discovered.forEach((id) => { if (Object.hasOwn(celestialObjects, id)) discovered.add(id); });
-    puzzleComplete = remote.puzzleComplete === true;
+    const remotePuzzleConstellation = Object.hasOwn(celestialObjects, remote.puzzleConstellation)
+      ? remote.puzzleConstellation
+      : null;
+    if (selectedObject) {
+      if (remotePuzzleConstellation !== selectedObject) {
+        puzzleConstellation = selectedObject;
+        puzzleComplete = false;
+      }
+    } else {
+      puzzleConstellation = remotePuzzleConstellation;
+      puzzleComplete = remote.puzzleComplete === true && puzzleConstellation !== null;
+    }
     try {
       localStorage.setItem(atlasStorageKey, JSON.stringify(atlasProgressSnapshot()));
     } catch (_error) {
-      // PostgreSQL remains the primary copy when browser storage is unavailable.
+      atlasStorageAvailable = false;
+      console.error('Could not cache Dream Atlas progress in this browser.');
     }
     renderDiscoveryJournal();
     objectButtons.forEach((button) => {
       if (discovered.has(button.dataset.object)) button.classList.add('is-discovered');
     });
-    if (puzzleComplete) {
-      game.classList.add('has-progress', 'is-complete');
-      gameStars.forEach((star) => star.classList.add('is-connected'));
-      gameMessage.textContent = 'You found it! The Sleepy Fox is shining in the sky.';
+    if (!persistent && !discoveryStatus.textContent) {
+      discoveryStatus.textContent = atlasStorageAvailable
+        ? 'Online progress is unavailable; showing discoveries saved on this device.'
+        : 'Saved progress is unavailable; discoveries will last only for this visit.';
     }
     if (atlasProgressChangeVersion !== versionAtLoad) saveAtlasProgress();
+  }).catch((error) => {
+    console.error('Could not load Dream Atlas activity progress:', error);
+    discoveryStatus.textContent = atlasStorageAvailable
+      ? 'Online progress is unavailable; showing discoveries saved on this device.'
+      : 'Saved progress is unavailable; discoveries will last only for this visit.';
   });
 }
 

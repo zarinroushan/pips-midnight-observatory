@@ -239,8 +239,25 @@ dialogueClose.addEventListener('click', () => {
 });
 
 const pipButton = document.querySelector('#pipButton');
+const pipLoadingInstruction = document.querySelector('#dreamworldPipLoading');
+const pipReadyInstruction = document.querySelector('#dreamworldPipReady');
+
+dialogue.hidden = true;
+pipButton.setAttribute('aria-expanded', 'false');
+
+function updatePipInstruction() {
+  const pipReady = document.body.classList.contains('dreamworld-pip-3d-ready');
+  const conversationOpen = !dialogue.hidden;
+  pipLoadingInstruction.hidden = pipReady || conversationOpen;
+  pipReadyInstruction.hidden = !pipReady || conversationOpen;
+}
+
+const pipReadinessObserver = new MutationObserver(updatePipInstruction);
+pipReadinessObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+updatePipInstruction();
 
 pipButton.addEventListener('click', () => {
+  if (!document.body.classList.contains('dreamworld-pip-3d-ready')) return;
   playMapArrivalIfNeeded();
   window.DearPipSounds?.play('pip-hello');
   window.dispatchEvent(new Event('dreamworld:pip-hello'));
@@ -251,4 +268,7 @@ pipButton.addEventListener('click', () => {
   }
   dialogue.hidden = closing;
   pipButton.setAttribute('aria-expanded', String(!dialogue.hidden));
+  updatePipInstruction();
 });
+
+dialogueClose.addEventListener('click', updatePipInstruction);

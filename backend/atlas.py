@@ -17,6 +17,11 @@ try:
 except ImportError:  # Support `python app.py` from backend/.
     from database import connect_database, database_url
 
+try:
+    from .github import fetch_github_repositories, get_configured_github_user, normalize_project_key
+except ImportError:
+    from github import fetch_github_repositories, get_configured_github_user, normalize_project_key
+
 
 atlas = Blueprint("atlas", __name__)
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -368,9 +373,111 @@ def get_skill(skill_id):
     return (jsonify(skill=skill), 200) if skill else (jsonify(error="Skill not found."), 404)
 
 
+def _is_same_project(db_name: str, db_repo: str | None, gh_name: str, gh_url: str) -> bool:
+    if db_repo:
+        norm_db_repo = db_repo.rstrip("/").lower()
+        norm_gh_url = gh_url.rstrip("/").lower()
+        if norm_db_repo == norm_gh_url or norm_db_repo.endswith("/" + gh_name.lower()):
+            return True
+
+    norm_db = normalize_project_key(db_name)
+    norm_gh = normalize_project_key(gh_name)
+    if norm_db == norm_gh:
+        return True
+
+    # Match aliases like "Dear Pip — Midnight Nursery" with "pips-midnight-observatory"
+    if ("pip" in norm_db and ("midnight" in norm_db or "nursery" in norm_db or "observatory" in norm_db)) and \
+       ("pip" in norm_gh and ("midnight" in norm_gh or "nursery" in norm_gh or "observatory" in norm_gh)):
+        return True
+
+    return False
+
+
+def _build_portfolio(db_projects: list):
+    gh_projects, is_cached, is_rate_limited = fetch_github_repositories()
+    unified = []
+    matched_gh_urls = set()
+    matched_gh_names = set()
+
+    for p in db_projects:
+        p_record = dict(p)
+        p_record["source"] = "database"
+        repo_url = p_record.get("repository_url")
+
+        # Check if matching GitHub repo exists
+        matching_gh = None
+        for gh in gh_projects:
+            gh_url = gh.get("repository_url") or ""
+            gh_name = gh.get("name") or ""
+            if _is_same_project(p_record["name"], repo_url, gh_name, gh_url):
+                matching_gh = gh
+                break
+
+        if matching_gh:
+            matched_gh_urls.add((matching_gh.get("repository_url") or "").rstrip("/").lower())
+            matched_gh_names.add(normalize_project_key(matching_gh["name"]))
+            p_record["stars"] = matching_gh.get("stars", 0)
+            p_record["forks"] = matching_gh.get("forks", 0)
+            p_record["homepage"] = matching_gh.get("homepage")
+            p_record["source"] = "database+github"
+            if not p_record.get("repository_url"):
+                p_record["repository_url"] = matching_gh.get("repository_url")
+            if not p_record.get("language") or p_record.get("language") == "Other":
+                p_record["language"] = matching_gh.get("language")
+
+        unified.append(p_record)
+
+    for gh in gh_projects:
+        gh_url = (gh.get("repository_url") or "").rstrip("/").lower()
+        gh_name = normalize_project_key(gh["name"])
+        if (gh_url and gh_url in matched_gh_urls) or (gh_name in matched_gh_names):
+            continue
+        unified.append(gh)
+
+    return unified, is_cached, is_rate_limited
+
+
+@atlas.get("/api/github/projects")
+def list_github_projects():
+    username = get_configured_github_user()
+    projects, cached, rate_limited = fetch_github_repositories(username)
+    return jsonify(
+        username=username,
+        projects=projects,
+        count=len(projects),
+        cached=cached,
+        rate_limited=rate_limited,
+    ), 200
+
+
+@atlas.get("/api/portfolio")
+def get_portfolio():
+    db_projects = []
+    if _db_url():
+        try:
+            with connect_database(_db_url()) as connection:
+                ids = connection.execute("SELECT id FROM atlas_projects ORDER BY name_key").fetchall()
+                db_projects = [_project_record(connection, row[0]) for row in ids]
+        except Exception as error:
+            current_app.logger.warning("Database read for portfolio failed: %s", error)
+
+    unified, cached, rate_limited = _build_portfolio(db_projects)
+    return jsonify(
+        username=get_configured_github_user(),
+        projects=unified,
+        count=len(unified),
+        cached=cached,
+        rate_limited=rate_limited,
+    ), 200
+
+
 @atlas.get("/api/projects")
 def list_projects():
+    include_github = request.args.get("include_github", "").lower() in ("true", "1", "yes") or request.args.get("source") in ("all", "portfolio")
     if not _db_url():
+        if include_github:
+            unified, cached, rate_limited = _build_portfolio([])
+            return jsonify(projects=unified, cached=cached, rate_limited=rate_limited), 200
         return jsonify(error="Dream Atlas storage is temporarily unavailable."), 503
     try:
         with connect_database(_db_url()) as connection:
@@ -378,6 +485,9 @@ def list_projects():
             projects = [_project_record(connection, row[0]) for row in ids]
     except psycopg.Error as error:
         return _db_error(error)
+    if include_github:
+        unified, _cached, _rate_limited = _build_portfolio(projects)
+        return jsonify(projects=unified), 200
     return jsonify(projects=projects), 200
 
 
