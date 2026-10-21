@@ -43,10 +43,24 @@
       };
     }
     if (feature === 'bedtime') {
-      const scenes = new Set(['opening', 'hill', 'cloud', 'skyEnding', 'gardenEnding', 'nightlightEnding']);
+      const adventures = new Set(['missing-star', 'lumi-wish', 'music-box', 'lantern-path', 'little-lights', 'ember-glow', 'nova-day', 'mochi-place', 'pippa-song']);
+      const scenes = new Set([
+        'opening', 'hill', 'cloud', 'skyEnding', 'gardenEnding', 'nightlightEnding',
+        'star-start', 'star-hill', 'star-cloud', 'star-home', 'star-garden', 'star-nightlight',
+        'lumi-start', 'lumi-question', 'lumi-meadow', 'lumi-seedlings', 'lumi-meadow-ending', 'lumi-seedlings-ending',
+        'music-start', 'music-clue', 'music-rain', 'music-hum', 'music-rain-ending', 'music-hum-ending',
+        'lantern-start', 'lantern-crossroads', 'lantern-fireflies', 'lantern-call', 'lantern-friend', 'lantern-ending',
+        'lights-start', 'lights-challenge', 'lights-circle', 'lights-rhythm', 'lights-circle-ending', 'lights-rhythm-ending',
+        'ember-start', 'ember-choice', 'ember-flowers', 'ember-pond', 'ember-flower-ending', 'ember-pond-ending',
+        'nova-start', 'nova-choice', 'nova-stones', 'nova-rest', 'nova-stones-ending', 'nova-rest-ending',
+        'mochi-start', 'mochi-choice', 'mochi-willow', 'mochi-flowers', 'mochi-willow-ending', 'mochi-flowers-ending',
+        'pippa-start', 'pippa-choice', 'pippa-petals', 'pippa-bellflower', 'pippa-petals-ending', 'pippa-bellflower-ending',
+      ]);
       if (!scenes.has(value.scene)) return null;
       const visited = Array.isArray(value.visited) ? value.visited.filter((item) => scenes.has(item)) : [];
-      return { version: 1, scene: value.scene, visited: [...new Set([...visited, value.scene])] };
+      const adventure = adventures.has(value.adventure) ? value.adventure : null;
+      const completed = Array.isArray(value.completed) ? [...new Set(value.completed.filter((item) => adventures.has(item)))] : [];
+      return { version: 1, scene: value.scene, visited: [...new Set([...visited, value.scene])], adventure, completed };
     }
     if (feature === 'lullaby') {
       if (!Array.isArray(value.bubbles)) return null;
@@ -82,7 +96,13 @@
       };
     }
     if (feature === 'bedtime') {
-      return { version: 1, scene: right.scene, visited: [...new Set([...left.visited, ...right.visited])] };
+      return {
+        version: 1,
+        scene: right.scene,
+        visited: [...new Set([...left.visited, ...right.visited])],
+        adventure: right.adventure || left.adventure,
+        completed: [...new Set([...left.completed, ...right.completed])],
+      };
     }
     const deletedBubbles = [...new Set([...left.deletedBubbles, ...right.deletedBubbles])].slice(-40);
     const removed = new Set(deletedBubbles);
@@ -151,7 +171,7 @@
     if (!data) return false;
     if (feature === 'home') return data.collected.length > 0 || data.collectedButterflies.length > 0;
     if (feature === 'atlas') return data.discovered.length > 0 || data.puzzleComplete;
-    if (feature === 'bedtime') return data.scene !== 'opening' || data.visited.length > 1;
+    if (feature === 'bedtime') return data.scene !== 'opening' || data.visited.length > 1 || data.completed.length > 0;
     return data.bubbles.length > 0 || data.deletedBubbles.length > 0;
   }
 
@@ -172,9 +192,7 @@
           }
           return { data: fallback, persistent: true };
         }
-        const merged = feature === 'bedtime' && local
-            ? { version: 1, scene: remote.scene, visited: [...new Set([...remote.visited, ...local.visited])] }
-            : merge(feature, remote, local);
+        const merged = merge(feature, remote, local);
         if (JSON.stringify(merged) !== JSON.stringify(remote)) await write(feature, merged, result.revision);
         return { data: merged, persistent: true };
       } catch (error) {

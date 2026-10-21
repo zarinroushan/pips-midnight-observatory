@@ -17,8 +17,21 @@ except ImportError:  # Support `python app.py` from backend/.
 progress = Blueprint("progress", __name__)
 FEATURES = {"home", "atlas", "bedtime", "lullaby"}
 ATLAS_DISCOVERIES = {"lantern", "sail", "whale", "garden", "bell"}
+STORY_ADVENTURES = {
+    "missing-star", "lumi-wish", "music-box", "lantern-path", "little-lights",
+    "ember-glow", "nova-day", "mochi-place", "pippa-song",
+}
 STORY_SCENES = {
     "opening", "hill", "cloud", "skyEnding", "gardenEnding", "nightlightEnding",
+    "star-start", "star-hill", "star-cloud", "star-home", "star-garden", "star-nightlight",
+    "lumi-start", "lumi-question", "lumi-meadow", "lumi-seedlings", "lumi-meadow-ending", "lumi-seedlings-ending",
+    "music-start", "music-clue", "music-rain", "music-hum", "music-rain-ending", "music-hum-ending",
+    "lantern-start", "lantern-crossroads", "lantern-fireflies", "lantern-call", "lantern-friend", "lantern-ending",
+    "lights-start", "lights-challenge", "lights-circle", "lights-rhythm", "lights-circle-ending", "lights-rhythm-ending",
+    "ember-start", "ember-choice", "ember-flowers", "ember-pond", "ember-flower-ending", "ember-pond-ending",
+    "nova-start", "nova-choice", "nova-stones", "nova-rest", "nova-stones-ending", "nova-rest-ending",
+    "mochi-start", "mochi-choice", "mochi-willow", "mochi-flowers", "mochi-willow-ending", "mochi-flowers-ending",
+    "pippa-start", "pippa-choice", "pippa-petals", "pippa-bellflower", "pippa-petals-ending", "pippa-bellflower-ending",
 }
 
 
@@ -58,13 +71,18 @@ def _validated_progress(feature, value):
             return None
         return {"version": 1, "discovered": discovered, "puzzleComplete": puzzle_complete}
     if feature == "bedtime":
-        if set(value) != {"version", "scene", "visited"}:
+        if set(value) - {"version", "scene", "visited", "adventure", "completed"} or not {"scene", "visited"} <= set(value):
             return None
         scene = value["scene"]
         visited = _unique_values(value["visited"], STORY_SCENES, len(STORY_SCENES))
-        if not isinstance(scene, str) or scene not in STORY_SCENES or visited is None or scene not in visited:
+        adventure = value.get("adventure")
+        completed = _unique_values(value.get("completed", []), STORY_ADVENTURES, len(STORY_ADVENTURES))
+        if (
+            not isinstance(scene, str) or scene not in STORY_SCENES or visited is None or scene not in visited
+            or (adventure is not None and adventure not in STORY_ADVENTURES) or completed is None
+        ):
             return None
-        return {"version": 1, "scene": scene, "visited": visited}
+        return {"version": 1, "scene": scene, "visited": visited, "adventure": adventure, "completed": completed}
     if feature == "lullaby":
         if set(value) != {"version", "bubbles", "deletedBubbles"} or not isinstance(value["bubbles"], list) or len(value["bubbles"]) > 20:
             return None
@@ -104,6 +122,8 @@ def _merge_progress(feature, current, incoming):
         "version": 1,
         "scene": incoming["scene"],
         "visited": [item for item in STORY_SCENES if item in set(current["visited"]) | set(incoming["visited"])],
+        "adventure": incoming.get("adventure") or current.get("adventure"),
+        "completed": [item for item in STORY_ADVENTURES if item in set(current.get("completed", [])) | set(incoming.get("completed", []))],
     }
 
 

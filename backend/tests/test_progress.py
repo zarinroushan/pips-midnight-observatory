@@ -6,6 +6,7 @@ from uuid import UUID
 import psycopg
 
 from backend import app as backend_app
+from backend.progress import _merge_progress, _validated_progress
 
 
 class FakeProgressConnection:
@@ -105,6 +106,47 @@ class VisitorProgressApiTests(unittest.TestCase):
             json={"revision": 0, "data": {"version": 1, "collected": [99], "collectedButterflies": []}},
         )
         self.assertEqual(invalid.status_code, 400)
+
+    def test_bedtime_progress_accepts_current_story_and_legacy_scenes(self):
+        scenes = {
+            "star-start", "star-hill", "star-cloud", "star-home", "star-garden", "star-nightlight",
+            "lumi-start", "lumi-question", "lumi-meadow", "lumi-seedlings", "lumi-meadow-ending", "lumi-seedlings-ending",
+            "music-start", "music-clue", "music-rain", "music-hum", "music-rain-ending", "music-hum-ending",
+            "lantern-start", "lantern-crossroads", "lantern-fireflies", "lantern-call", "lantern-friend", "lantern-ending",
+            "lights-start", "lights-challenge", "lights-circle", "lights-rhythm", "lights-circle-ending", "lights-rhythm-ending",
+            "ember-start", "ember-choice", "ember-flowers", "ember-pond", "ember-flower-ending", "ember-pond-ending",
+            "nova-start", "nova-choice", "nova-stones", "nova-rest", "nova-stones-ending", "nova-rest-ending",
+            "mochi-start", "mochi-choice", "mochi-willow", "mochi-flowers", "mochi-willow-ending", "mochi-flowers-ending",
+            "pippa-start", "pippa-choice", "pippa-petals", "pippa-bellflower", "pippa-petals-ending", "pippa-bellflower-ending",
+        }
+        legacy_scenes = {"opening", "hill", "cloud", "skyEnding", "gardenEnding", "nightlightEnding"}
+        for scene in scenes | legacy_scenes:
+            with self.subTest(scene=scene):
+                progress = _validated_progress(
+                    "bedtime",
+                    {"version": 1, "scene": scene, "visited": [scene]},
+                )
+                self.assertEqual(progress, {"version": 1, "scene": scene, "visited": [scene], "adventure": None, "completed": []})
+
+    def test_bedtime_progress_validates_and_merges_completed_adventures(self):
+        current = _validated_progress("bedtime", {
+            "version": 1, "scene": "lantern-friend", "visited": ["lantern-start", "lantern-friend"],
+            "adventure": "lantern-path", "completed": ["missing-star"],
+        })
+        incoming = _validated_progress("bedtime", {
+            "version": 1, "scene": "lights-rhythm", "visited": ["lights-start", "lights-rhythm"],
+            "adventure": "little-lights", "completed": ["little-lights", "missing-star"],
+        })
+        self.assertIsNotNone(current)
+        self.assertIsNotNone(incoming)
+        merged = _merge_progress("bedtime", current, incoming)
+        self.assertEqual(merged["adventure"], "little-lights")
+        self.assertEqual(set(merged["completed"]), {"missing-star", "little-lights"})
+        self.assertIn("lantern-friend", merged["visited"])
+        self.assertIn("lights-rhythm", merged["visited"])
+        self.assertIsNone(_validated_progress("bedtime", {
+            "version": 1, "scene": "lights-start", "visited": ["lights-start"], "adventure": "unknown-story",
+        }))
 
     def test_story_context_uses_saved_project_skills_and_visitor_achievements(self):
         response = self.client.get(f"/api/stories/context/{self.visitor_id}")

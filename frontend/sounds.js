@@ -20,6 +20,8 @@
     secret: [880, 1174.66],
     'game-win': [659.25, 783.99, 1046.5],
     'pip-hello': [523.25, 659.25],
+    bookOpen: [392, 523.25, 659.25],
+    pageTurn: [],
   };
   let enabled = false;
   let queuedEffect = null;
@@ -191,6 +193,31 @@
     const start = () => {
       if (!enabled || context.state !== 'running') return;
       const firstTime = context.currentTime + offset;
+      if (name === 'pageTurn') {
+        const length = Math.ceil(context.sampleRate * 0.24);
+        const noise = context.createBuffer(1, length, context.sampleRate);
+        const samples = noise.getChannelData(0);
+        for (let index = 0; index < length; index += 1) {
+          const fade = 1 - index / length;
+          samples[index] = (Math.random() * 2 - 1) * fade * fade;
+        }
+        const source = context.createBufferSource();
+        const filter = context.createBiquadFilter();
+        const envelope = context.createGain();
+        source.buffer = noise;
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(1450, firstTime);
+        filter.Q.setValueAtTime(0.65, firstTime);
+        envelope.gain.setValueAtTime(0.0001, firstTime);
+        envelope.gain.exponentialRampToValueAtTime(0.11, firstTime + 0.025);
+        envelope.gain.exponentialRampToValueAtTime(0.0001, firstTime + 0.23);
+        source.connect(filter);
+        filter.connect(envelope);
+        envelope.connect(masterGain);
+        source.start(firstTime);
+        source.stop(firstTime + 0.24);
+        return;
+      }
       notes.forEach((frequency, index) => {
         const at = firstTime + index * 0.105;
         const oscillator = context.createOscillator();
