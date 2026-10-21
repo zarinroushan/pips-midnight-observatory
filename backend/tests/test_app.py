@@ -22,8 +22,10 @@ class FakeConnection:
         self.tables = {
             "guestbook_entries", "garden_states", "atlas_skills", "atlas_projects",
             "atlas_skill_evidence", "atlas_project_skills", "visitor_progress",
+            "public_journal_events",
         }
         self.pending_guestbook = {77: "pending"}
+        self.journal_dedupe_keys = set()
 
     def __enter__(self):
         return self
@@ -33,6 +35,17 @@ class FakeConnection:
 
     def execute(self, query, params=()):
         self.last_query = " ".join(query.split())
+        if self.last_query.startswith(("SAVEPOINT", "RELEASE SAVEPOINT", "ROLLBACK TO SAVEPOINT")):
+            self.fetchone_result = None
+            return self
+        if self.last_query.startswith("INSERT INTO public_journal_events"):
+            _event_type, _reference_key, dedupe_key = params
+            if dedupe_key in self.journal_dedupe_keys:
+                self.fetchone_result = None
+            else:
+                self.journal_dedupe_keys.add(dedupe_key)
+                self.fetchone_result = (len(self.journal_dedupe_keys),)
+            return self
         if self.last_query.startswith("SELECT table_name FROM information_schema.tables"):
             self.fetchall_result = [(name,) for name in sorted(self.tables.intersection(params[0]))]
             return self

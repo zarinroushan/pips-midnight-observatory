@@ -57,6 +57,10 @@ If `guestbook_entries` already exists, ensure it has `id`, `display_name`,
 `dream_message`, `status`, and `created_at` columns before applying migration 001.
 Migration `003_visitor_progress.sql` adds revisioned progress for home, Atlas,
 bedtime reading, and Lullaby Lab notes.
+Migration `004_public_journal.sql` stores allowlisted, server-authored shared
+journal events without visitor identifiers or private wish text. Apply it before
+the public Workshop timeline is available; readiness reports it as a missing
+table until then.
 
 No schema migration is needed for server-validated Garden sessions: the
 existing `garden_states.visitor_id` UUID key stores the server-generated
@@ -73,6 +77,7 @@ repository root run:
 & 'C:\Program Files\PostgreSQL\18\bin\psql.exe' "$env:DATABASE_URL" -v ON_ERROR_STOP=1 -f .\backend\migrations\001_garden_state.sql
 & 'C:\Program Files\PostgreSQL\18\bin\psql.exe' "$env:DATABASE_URL" -v ON_ERROR_STOP=1 -f .\backend\migrations\002_atlas.sql
 & 'C:\Program Files\PostgreSQL\18\bin\psql.exe' "$env:DATABASE_URL" -v ON_ERROR_STOP=1 -f .\backend\migrations\003_visitor_progress.sql
+& 'C:\Program Files\PostgreSQL\18\bin\psql.exe' "$env:DATABASE_URL" -v ON_ERROR_STOP=1 -f .\backend\migrations\004_public_journal.sql
 ```
 
 Do not paste credentials into source files or share terminal output that includes

@@ -7,11 +7,13 @@ from uuid import UUID
 
 import psycopg
 from psycopg.types.json import Jsonb
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, current_app, jsonify, request
 try:
     from .database import connect_database
+    from .journal import record_event
 except ImportError:  # Support `python app.py` from backend/.
     from database import connect_database
+    from journal import record_event
 
 
 progress = Blueprint("progress", __name__)
@@ -33,6 +35,49 @@ STORY_SCENES = {
     "mochi-start", "mochi-choice", "mochi-willow", "mochi-flowers", "mochi-willow-ending", "mochi-flowers-ending",
     "pippa-start", "pippa-choice", "pippa-petals", "pippa-bellflower", "pippa-petals-ending", "pippa-bellflower-ending",
 }
+STORY_ENDING_SCENES = {
+    "missing-star": {"star-home", "star-garden", "star-nightlight"},
+    "lumi-wish": {"lumi-meadow-ending", "lumi-seedlings-ending"},
+    "music-box": {"music-rain-ending", "music-hum-ending"},
+    "lantern-path": {"lantern-ending"},
+    "little-lights": {"lights-circle-ending", "lights-rhythm-ending"},
+    "ember-glow": {"ember-flower-ending", "ember-pond-ending"},
+    "nova-day": {"nova-stones-ending", "nova-rest-ending"},
+    "mochi-place": {"mochi-willow-ending", "mochi-flowers-ending"},
+    "pippa-song": {"pippa-petals-ending", "pippa-bellflower-ending"},
+}
+
+
+def _record_progress_journal_events(connection, visitor_id, feature, previous, current, secret_key):
+    if current is None:
+        return
+    previous = previous if isinstance(previous, dict) else {}
+
+    def add_event(event_key, event_type, reference_key=None):
+        connection.execute("SAVEPOINT public_journal_event_write")
+        try:
+            record_event(connection, visitor_id, event_key, event_type, reference_key, secret_key)
+        except psycopg.Error as error:
+            connection.execute("ROLLBACK TO SAVEPOINT public_journal_event_write")
+            current_app.logger.info("Public journal event was not recorded (%s).", type(error).__name__)
+        finally:
+            connection.execute("RELEASE SAVEPOINT public_journal_event_write")
+
+    if feature == "home":
+        old_stars = previous.get("collected", [])
+        if len(set(old_stars)) < 5 and len(set(current["collected"])) == 5:
+            add_event("home:all-stars", "home_stars")
+        return
+    if feature == "atlas":
+        if current["puzzleComplete"] and not previous.get("puzzleComplete", False):
+            add_event("atlas:sleepy-fox", "atlas_puzzle")
+        return
+    if feature == "bedtime":
+        old_completed = set(previous.get("completed", []))
+        visited = set(current.get("visited", []))
+        for story_id in set(current.get("completed", [])) - old_completed:
+            if visited.intersection(STORY_ENDING_SCENES.get(story_id, set())):
+                add_event(f"bedtime:{story_id}", "story_complete", reference_key=story_id)
 
 
 def _database_error(error):
@@ -199,6 +244,16 @@ def put_progress(visitor_id: UUID, feature: str):
                         "SELECT revision, data FROM visitor_progress WHERE visitor_id = %s AND feature_key = %s",
                         (visitor_id, feature),
                     ).fetchone()
+            if next_revision is not None:
+                previous_progress = _validated_progress(feature, current[1]) if current else None
+                _record_progress_journal_events(
+                    connection,
+                    visitor_id,
+                    feature,
+                    previous_progress,
+                    data,
+                    current_app.config.get("SECRET_KEY"),
+                )
     except psycopg.Error as error:
         return _database_error(error)
 

@@ -13,6 +13,7 @@ from uuid import UUID
 import psycopg
 
 from backend import app as backend_app
+from backend.journal import _dedupe_key
 
 
 TEST_DATABASE_URL = os.environ.get("DEAR_PIP_TEST_DATABASE_URL")
@@ -59,6 +60,19 @@ class PostgreSQLApiIntegrationTests(unittest.TestCase):
                     connection.execute(
                         "DELETE FROM visitor_progress WHERE visitor_id = %s",
                         (self.visitor_id,),
+                    )
+                journal_table = connection.execute(
+                    "SELECT to_regclass('public_journal_events')"
+                ).fetchone()[0]
+                if journal_table is not None:
+                    dedupe_key = _dedupe_key(
+                        self.visitor_id,
+                        "home:all-stars",
+                        backend_app.app.config["SECRET_KEY"],
+                    )
+                    connection.execute(
+                        "DELETE FROM public_journal_events WHERE dedupe_key = %s",
+                        (dedupe_key,),
                     )
                 if self.guestbook_entry_id is not None:
                     guestbook_table = connection.execute(
@@ -221,6 +235,29 @@ class PostgreSQLApiIntegrationTests(unittest.TestCase):
             self.guestbook_entry_id,
             [entry["id"] for entry in approved_entries.get_json()["entries"]],
         )
+
+    def test_public_journal_milestone_is_shared_across_visitors_and_refreshes(self):
+        response = self.client.put(
+            f"/api/progress/{self.visitor_id}/home",
+            json={
+                "revision": 0,
+                "data": {
+                    "version": 1,
+                    "collected": [0, 1, 2, 3, 4],
+                    "collectedButterflies": [],
+                },
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+
+        another_visitor = backend_app.app.test_client().get("/api/public-journal")
+        refreshed = self.client.get("/api/public-journal")
+        self.assertEqual(another_visitor.status_code, 200)
+        self.assertEqual(another_visitor.get_json(), refreshed.get_json())
+        self.assertTrue(any(
+            entry["message"] == "I found all five sparkling stars in the garden!"
+            for entry in refreshed.get_json()["entries"]
+        ))
 
 
 if __name__ == "__main__":

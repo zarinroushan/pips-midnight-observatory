@@ -19,13 +19,16 @@ app = Flask(__name__)
 try:
     from .atlas import atlas as atlas_blueprint, owner_required
     from .database import connect_database, database_url
+    from .journal import journal as journal_blueprint, record_event
     from .progress import progress as progress_blueprint
 except ImportError:  # Support the documented `python app.py` launch from backend/.
     from atlas import atlas as atlas_blueprint, owner_required
     from database import connect_database, database_url
+    from journal import journal as journal_blueprint, record_event
     from progress import progress as progress_blueprint
 app.register_blueprint(atlas_blueprint)
 app.register_blueprint(progress_blueprint)
+app.register_blueprint(journal_blueprint)
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024
 production_mode = (
     bool(os.environ.get("PORT"))
@@ -371,6 +374,7 @@ def ready():
     required_tables = {
         "guestbook_entries", "garden_states", "atlas_skills", "atlas_projects",
         "atlas_skill_evidence", "atlas_project_skills", "visitor_progress",
+        "public_journal_events",
     }
     try:
         with connect_database(connection_url) as connection:
@@ -812,6 +816,20 @@ def fulfill_garden_wish(wish_id):
                     (visitor_id,),
                 ).fetchone()
                 return garden_state_conflict(current)
+            connection.execute("SAVEPOINT public_journal_event_write")
+            try:
+                record_event(
+                    connection,
+                    visitor_id,
+                    f"garden-wish:{wish_id}",
+                    "garden_wish",
+                    secret_key=app.config.get("SECRET_KEY"),
+                )
+            except psycopg.Error as error:
+                connection.execute("ROLLBACK TO SAVEPOINT public_journal_event_write")
+                app.logger.info("Public Garden journal event was not recorded (%s).", type(error).__name__)
+            finally:
+                connection.execute("RELEASE SAVEPOINT public_journal_event_write")
     except psycopg.Error as error:
         return garden_database_unavailable(error)
 

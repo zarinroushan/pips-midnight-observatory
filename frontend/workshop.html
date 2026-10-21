@@ -4,63 +4,90 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#17152c">
-  <meta name="description" content="Explore the real projects growing in Pip's Workshop.">
-  <title>Pip's Workshop — Dear Pip</title>
+  <meta name="description" content="Pip's Workshop is home to Pip's Little Moments, a shared storybook diary of anonymous, server-verified adventures.">
+  <meta name="dear-pip-api-base" content="https://pips-midnight-observatory-egql.onrender.com">
+  <title>Pip's Workshop — Pip's Little Moments | Dear Pip</title>
   <script src="theme.js"></script>
   <link rel="stylesheet" href="style.css">
   <script src="sounds.js" defer></script>
   <script src="workshop.js" defer></script>
 </head>
 <body class="workshop-page">
-  <a class="workshop-skip" href="#workshopProjects">Skip to the project shelf</a>
+  <div class="atlas-day-atmosphere" aria-hidden="true">
+    <span class="atlas-day-atmosphere__cloud">☁</span>
+    <span class="atlas-day-atmosphere__butterfly">🦋</span>
+    <span class="atlas-day-atmosphere__sparkle">✧</span>
+  </div>
+  <a class="workshop-skip" href="#journalEntries">Skip to Pip's journal</a>
   <header class="workshop-header">
-    <a class="workshop-brand" href="index.html" aria-label="Dear Pip home"><img class="brand-mascot__image" src="assets/pip.png" alt="" aria-hidden="true"> DEAR PIP <span>/</span> PIP'S WORKSHOP</a>
-    <button class="mood-toggle page-theme-toggle" type="button" data-theme-toggle aria-pressed="false" aria-label="Switch to light theme"><span data-theme-icon aria-hidden="true">☾</span> <span data-theme-label>Dark mode</span></button>
+    <a class="workshop-brand" href="index.html" aria-label="Dear Pip home">
+      <img class="brand-mascot__image" src="assets/pip.png" alt="" aria-hidden="true">
+      <span>DEAR PIP</span><span aria-hidden="true">/</span><span>PIP'S WORKSHOP</span>
+    </a>
+    <button class="mood-toggle page-theme-toggle" type="button" data-theme-toggle aria-pressed="false" aria-label="Switch to light theme">
+      <span data-theme-icon aria-hidden="true">☾</span> <span data-theme-label>Dark mode</span>
+    </button>
     <a class="workshop-back" href="dreamworld.html">← Back to Dreamworld</a>
   </header>
   <main class="workshop-main">
     <section class="workshop-intro" aria-labelledby="workshopTitle">
-      <p class="workshop-eyebrow">REAL PROJECTS · IMAGINED AS INVENTIONS</p>
-      <h1 id="workshopTitle">Pip's <em>Workshop</em></h1>
-      <p>Every invention begins with a real problem, a curious question, or a small thing worth making better. Fictional Pip lore is kept separate from the workbench notes.</p>
-    </section>
-    <section class="workshop-shelf" id="workshopProjects" aria-labelledby="workshopShelfTitle">
-      <div class="workshop-section-heading">
-        <div><p class="workshop-eyebrow">THE WORKBENCH</p><h2 id="workshopShelfTitle">Projects on the shelf</h2></div>
-        <p class="workshop-count" id="workshopCount" aria-live="polite"></p>
+      <div class="workshop-intro__art">
+        <img src="assets/pip.png" alt="Pip, ready to share a little moment from the garden" width="280" height="280">
+        <span class="workshop-intro__sparkle workshop-intro__sparkle--one" aria-hidden="true">✦</span>
+        <span class="workshop-intro__sparkle workshop-intro__sparkle--two" aria-hidden="true">✧</span>
       </div>
-      <form class="workshop-filters" id="workshopFilters" role="search">
-        <label>Find a project <input id="workshopSearch" type="search" placeholder="Name or technology" autocomplete="off"></label>
-        <label>Kind of work
-          <select id="workshopCategory">
-            <option value="">All categories</option>
-            <option value="web">Web experience</option>
-          </select>
-        </label>
-        <label>Technology
-          <select id="workshopTechnology">
-            <option value="">All technologies</option>
-            <option value="html">HTML</option>
-            <option value="css">CSS</option>
-            <option value="javascript">JavaScript</option>
-            <option value="flask">Flask</option>
-            <option value="postgresql">PostgreSQL</option>
-          </select>
-        </label>
-      </form>
-      <div class="workshop-results" id="workshopResults" aria-live="polite"></div>
-      <p class="workshop-empty" id="workshopEmpty" hidden>No projects match those filters yet. Try another little search.</p>
+      <div class="workshop-intro__copy">
+        <p class="workshop-eyebrow">A SHARED STORYBOOK JOURNAL</p>
+        <h1 id="workshopTitle">Pip's <em>Little Moments</em></h1>
+        <p>“I like to remember the kind things we discover together. Here are a few little moments from our shared world.”</p>
+        <p class="workshop-intro__note">These notes are anonymous and come from real adventures visitors have completed.</p>
+      </div>
     </section>
-    <section class="workshop-about" aria-labelledby="workshopAboutTitle">
-      <p class="workshop-eyebrow">A NOTE FROM THE MAKER</p>
-      <h2 id="workshopAboutTitle">This portfolio is still growing.</h2>
-      <p>Only work supported by the project files is listed here. More verified project notes, screenshots, and public links can be added when they are available.</p>
+    <section class="workshop-journal" aria-labelledby="journalTitle" aria-describedby="journalDescription">
+      <div class="workshop-journal__heading">
+        <div>
+          <p class="workshop-eyebrow">GATHERED ALONG THE WAY</p>
+          <h2 id="journalTitle">Our little timeline</h2>
+          <p id="journalDescription">A shared collection of gentle moments from Pip's world.</p>
+        </div>
+        <span class="workshop-journal__ornament" aria-hidden="true">✦</span>
+      </div>
+      <p class="workshop-journal__preview-notice" id="journalPreviewNotice" role="note" hidden>
+        Development preview: sample entries for layout testing only. These are not real shared-journal memories.
+      </p>
+      <p class="workshop-journal__status" id="journalStatus" role="status" aria-live="polite">Opening Pip's journal…</p>
+      <ol class="workshop-timeline" id="journalEntries" aria-label="Pip's public journal entries" aria-live="polite"></ol>
+      <div class="workshop-empty" id="journalEmpty" hidden>
+        <span aria-hidden="true">☾</span>
+        <h3>Our first little moment is still to come</h3>
+        <p>When someone completes a real adventure with Pip, a small anonymous note will find its place here.</p>
+      </div>
+      <p class="workshop-journal__fallback" id="journalFallback" hidden>
+        The shared journal is taking a quiet moment. Please visit again soon.
+      </p>
+      <p class="workshop-journal__local" id="journalLocalUnavailable" hidden>
+        The local preview cannot reach Pip's journal service. Start the Flask API from the backend folder, then try again.
+      </p>
+      <button class="workshop-back workshop-journal__retry" id="journalRetry" type="button" hidden>Try again</button>
     </section>
+    <dialog class="workshop-detail" id="journalDetail" aria-labelledby="journalDetailTitle" aria-describedby="journalDetailDescription">
+      <article class="workshop-detail__page">
+        <button class="workshop-detail__close" id="journalDetailClose" type="button" aria-label="Close journal detail">Close <span aria-hidden="true">Ã—</span></button>
+        <img class="workshop-detail__illustration" id="journalDetailImage" alt="" hidden>
+        <div class="workshop-detail__copy">
+          <p class="workshop-eyebrow" id="journalDetailCategory"></p>
+          <h2 id="journalDetailTitle" tabindex="-1"></h2>
+          <time class="workshop-detail__date" id="journalDetailTime"></time>
+          <p class="workshop-detail__description" id="journalDetailDescription"></p>
+          <p class="workshop-detail__outcome" id="journalDetailOutcome"></p>
+        </div>
+      </article>
+    </dialog>
   </main>
   <footer class="workshop-footer">
-    <span>MAKE A LITTLE THING THAT HELPS</span>
+    <span>EVERY LITTLE MOMENT HELPS THE STORY GROW</span>
     <nav aria-label="Explore Dear Pip">
-      <a href="index.html">Home</a><a href="dreamworld.html">Dreamworld</a><a href="workshop.html" aria-current="page">Workshop</a><a href="dream-atlas.html">Dream Atlas</a>
+      <a href="index.html">Home</a><a href="dreamworld.html">Dreamworld</a><a href="workshop.html" aria-current="page">Pip's Workshop</a><a href="dream-atlas.html">Dream Atlas</a>
       <a href="dream-garden.html">Dream Garden</a><a href="bedtime-stories.html">Bedtime Stories</a><a href="lullaby-lab.html">Lullaby Lab</a>
     </nav>
   </footer>

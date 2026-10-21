@@ -1,8 +1,8 @@
 const locations = {
   workshop: {
     name: "Pip's Workshop",
-    description: 'A little workshop full of moon gears, curious inventions, and half-finished ideas.',
-    opening: 'One real project is on the shelf, with more verified project notes to come.',
+    description: "A little storybook journal of wishes, garden adventures, games, and cozy moments from Pip's world. Every verified adventure adds another little memory to our shared story.",
+    opening: 'Read the anonymous moments recorded from verified adventures across Pip’s world.',
     href: 'workshop.html',
   },
   garden: {
@@ -90,7 +90,7 @@ function selectLocation(locationKey, playSound = true) {
   locationDescription.textContent = location.description;
   locationOpening.textContent = location.opening;
   locationEnter.disabled = false;
-  locationEnter.textContent = `Enter ${location.name} →`;
+  locationEnter.textContent = locationKey === 'workshop' ? "Visit Pip's Workshop →" : `Enter ${location.name} →`;
   updateWorldLabel();
   window.dispatchEvent(new CustomEvent('dreamworld:selection', { detail: locationKey }));
 }
@@ -148,7 +148,7 @@ const dialogueReplies = {
     action: null,
   },
   workshop: {
-    message: 'Tiny inventions, mostly! The Workshop is where the real projects and the tools behind them live.',
+    message: 'Pip’s Little Moments is a shared storybook diary of wishes, garden adventures, games, and cozy moments from verified adventures.',
     action: { label: 'Visit Pip’s Workshop', href: 'workshop.html' },
   },
   dream: {
@@ -223,7 +223,7 @@ dialogueChoices.addEventListener('click', (event) => {
 dialogueReplay.addEventListener('click', () => {
   window.clearTimeout(dialogueTimer);
   dialogue.classList.remove('is-typing');
-  dialogueMessage.textContent = 'Oh! You made it! 🌙 I’m Pip, your little dream engineer. I build tiny inventions for the dreams that need a little help. Want to see what we’ve been dreaming up?';
+  dialogueMessage.textContent = 'Oh! You made it! 🌙 I’m Pip. I keep a little storybook diary of the adventures we share. Want to explore the Workshop together?';
   dialogueChoices.hidden = false;
   dialogueNext.hidden = true;
   dialogueNext.replaceChildren();
