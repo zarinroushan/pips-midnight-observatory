@@ -1,0 +1,88 @@
+{
+  "manifestVersion": 2,
+  "purpose": "Track installed and planned audio assets for the Lullaby Lab mixer. Installed paths are relative to the frontend directory.",
+  "licenseReference": {
+    "name": "Pixabay Content License",
+    "summary": "Pixabay's license summary permits free use and modifications without attribution, subject to its terms, including restrictions on standalone redistribution.",
+    "url": "https://pixabay.com/service/license-summary/",
+    "summaryVerified": true,
+    "downloadSourceMatched": false
+  },
+  "verificationNote": "All five normalized MP3 files exist and contain an MPEG audio frame after their ID3 tag. The project owner reports that each normalized file started individually in Chrome. Playback was not independently tested in this session, and exact Pixabay listing identities were not independently matched.",
+  "recordings": [
+    {
+      "layer": "rain",
+      "source": "Pixabay (as provided by project owner)",
+      "localPath": "assets/lullaby-lab/audio/normalized/rain.mp3",
+      "status": "installed",
+      "fileExists": true,
+      "mpegFrameHeaderVerified": true,
+      "playbackVerified": true,
+      "playbackVerificationSource": "Project owner reports individual Chrome start verification of the normalized file.",
+      "sourceListingMatched": false,
+      "candidateReference": {
+        "title": "Gentle Rain 07",
+        "creator": "DRAGON-STUDIO",
+        "sourcePage": "https://pixabay.com/sound-effects/nature-gentle-rain-07-437321/"
+      }
+    },
+    {
+      "layer": "wind",
+      "source": "Pixabay (as provided by project owner)",
+      "localPath": "assets/lullaby-lab/audio/normalized/soft-wind.mp3",
+      "status": "installed",
+      "fileExists": true,
+      "mpegFrameHeaderVerified": true,
+      "playbackVerified": true,
+      "playbackVerificationSource": "Project owner reports individual Chrome start verification of the normalized file.",
+      "sourceListingMatched": false,
+      "candidateReference": {
+        "title": "a gentle breeze, wind 4",
+        "creator": "mario1298 (freesound_community)",
+        "sourcePage": "https://pixabay.com/sound-effects/nature-a-gentle-breeze-wind-4-14681/"
+      }
+    },
+    {
+      "layer": "crickets",
+      "source": "Pixabay (as provided by project owner)",
+      "localPath": "assets/lullaby-lab/audio/normalized/nighttime-crickets.mp3",
+      "status": "installed",
+      "fileExists": true,
+      "mpegFrameHeaderVerified": true,
+      "playbackVerified": true,
+      "playbackVerificationSource": "Project owner reports individual Chrome start verification of the normalized file.",
+      "sourceListingMatched": false,
+      "candidateReference": {
+        "title": "Night cricket ambience",
+        "creator": "Abinash87 (freesound_community)",
+        "sourcePage": "https://pixabay.com/sound-effects/nature-night-cricket-ambience-22484/"
+      }
+    },
+    {
+      "layer": "fireplace",
+      "source": "Pixabay (as provided by project owner)",
+      "localPath": "assets/lullaby-lab/audio/normalized/fireplace.mp3",
+      "status": "installed",
+      "fileExists": true,
+      "mpegFrameHeaderVerified": true,
+      "playbackVerified": true,
+      "playbackVerificationSource": "Project owner reports individual Chrome start verification of the normalized file.",
+      "sourceListingMatched": false,
+      "candidateReference": {
+        "title": "Crackling fireplace – Nature Sounds",
+        "creator": "JuliusH",
+        "sourcePage": "https://pixabay.com/sound-effects/nature-crackling-fireplace-nature-sounds-8012/"
+      }
+    },
+    {
+      "layer": "tones",
+      "source": null,
+      "localPath": "assets/lullaby-lab/audio/normalized/gentle-lullaby-tones.mp3",
+      "status": "installed",
+      "fileExists": true,
+      "mpegFrameHeaderVerified": true,
+      "playbackVerified": true,
+      "playbackVerificationSource": "Project owner reports individual Chrome start verification of the normalized file."
+    }
+  ]
+}

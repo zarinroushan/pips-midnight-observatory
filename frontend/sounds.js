@@ -30,21 +30,28 @@
   let lastEffectAt = 0;
   let ambienceTracks = null;
   let ambienceMood = document.documentElement.dataset.mood || document.body?.dataset.mood || 'night';
+  let ambienceActivated = false;
+  let audioFailure = '';
   let ambienceFadeFrame = 0;
+  const muteListeners = new Set();
+  const mixerOwnsAmbience = document.body?.classList.contains('lullaby-page') || false;
   const pendingAmbiencePlays = new WeakSet();
 
   try {
-    const makeAmbienceTrack = (file) => {
-      const track = new Audio(new URL(`assets/${file}`, document.baseURI).href);
-      track.loop = true;
-      track.preload = 'auto';
-      track.volume = 0;
-      return track;
-    };
-    ambienceTracks = {
-      dawn: makeAmbienceTrack('day-ambience.mp3'),
-      night: makeAmbienceTrack('night-ambience.mp3'),
-    };
+    if (!mixerOwnsAmbience) {
+      const makeAmbienceTrack = (file) => {
+        const track = new Audio(new URL(`assets/${file}`, document.baseURI).href);
+        track.loop = true;
+        track.preload = 'auto';
+        track.volume = 0;
+        track.addEventListener('error', () => reportPlaybackFailure(`The ${file} ambience`, track.error));
+        return track;
+      };
+      ambienceTracks = {
+        dawn: makeAmbienceTrack('day-ambience.mp3'),
+        night: makeAmbienceTrack('night-ambience.mp3'),
+      };
+    }
   } catch (error) {
     console.info('Ambient audio is unavailable in this browser:', error);
   }
@@ -69,16 +76,18 @@
           if (!enabled) {
             track.volume = 0;
             track.pause();
+          } else {
+            clearPlaybackFailure();
           }
         }).catch((error) => {
-          console.info('Ambience playback is waiting for user interaction:', error);
+          reportPlaybackFailure('The room ambience', error);
         }).finally(() => pendingAmbiencePlays.delete(track));
       } else {
         pendingAmbiencePlays.delete(track);
       }
     } catch (error) {
       pendingAmbiencePlays.delete(track);
-      console.info('Ambience playback is waiting for user interaction:', error);
+      reportPlaybackFailure('The room ambience', error);
     }
   }
 
@@ -118,7 +127,21 @@
 
   function setAmbienceTheme(mood) {
     ambienceMood = mood === 'dawn' ? 'dawn' : 'night';
-    fadeAmbienceToMood();
+    if (ambienceActivated) fadeAmbienceToMood();
+  }
+
+  function reportPlaybackFailure(label, error) {
+    audioFailure = `${label} could not play. Check browser audio permissions and try again.`;
+    document.querySelector('#soundToggle')?.setAttribute('aria-description', audioFailure);
+    window.dispatchEvent(new CustomEvent('dearpip:sounderror', {
+      detail: { label, message: audioFailure, errorName: error?.name || 'AudioError' },
+    }));
+    console.info(audioFailure, error);
+  }
+
+  function clearPlaybackFailure() {
+    audioFailure = '';
+    document.querySelector('#soundToggle')?.removeAttribute('aria-description');
   }
 
   try {
@@ -132,9 +155,31 @@
     button.setAttribute('aria-pressed', String(enabled));
     button.setAttribute('aria-label', enabled ? 'Turn sound effects off' : 'Turn sound effects on');
     button.title = enabled ? 'Turn sound effects off' : 'Turn sound effects on';
+    if (!audioFailure) button.removeAttribute('aria-description');
     const text = button.querySelector('[data-sound-label], span');
     if (text) text.textContent = label;
     else button.textContent = enabled ? '♫ Sound on' : '♫ Sound off';
+  }
+
+  function notifyMuteListeners() {
+    muteListeners.forEach((listener) => {
+      try {
+        listener(!enabled);
+      } catch (error) {
+        console.info('A site sound-mute listener could not be updated:', error);
+      }
+    });
+  }
+
+  function subscribeMute(listener) {
+    if (typeof listener !== 'function') return () => {};
+    muteListeners.add(listener);
+    try {
+      listener(!enabled);
+    } catch (error) {
+      console.info('A site sound-mute listener could not be initialized:', error);
+    }
+    return () => muteListeners.delete(listener);
   }
 
   function createControl() {
@@ -153,12 +198,15 @@
     updateButton(button);
     button.addEventListener('click', () => {
       enabled = !enabled;
+      ambienceActivated = enabled;
+      if (masterGain && audioContext) masterGain.gain.setTargetAtTime(enabled ? 0.16 : 0, audioContext.currentTime, 0.025);
       try {
         localStorage.setItem(preferenceKey, enabled ? 'on' : 'off');
       } catch (error) {
         console.error('Could not save the sound-effects preference:', error);
       }
       updateButton(button);
+      notifyMuteListeners();
       fadeAmbienceToMood();
       if (enabled && queuedEffect) {
         const cue = queuedEffect;
@@ -191,7 +239,7 @@
     const context = ensureAudio();
     if (!context) return false;
     const start = () => {
-      if (!enabled || context.state !== 'running') return;
+      if (!enabled || context.state !== 'running') return false;
       const firstTime = context.currentTime + offset;
       if (name === 'pageTurn') {
         const length = Math.ceil(context.sampleRate * 0.24);
@@ -216,7 +264,7 @@
         envelope.connect(masterGain);
         source.start(firstTime);
         source.stop(firstTime + 0.24);
-        return;
+        return true;
       }
       notes.forEach((frequency, index) => {
         const at = firstTime + index * 0.105;
@@ -232,16 +280,27 @@
         oscillator.start(at);
         oscillator.stop(at + 0.45);
       });
+      return true;
+    };
+
+    const safeStart = () => {
+      try {
+        const started = start();
+        if (started) clearPlaybackFailure();
+        return started;
+      } catch (error) {
+        reportPlaybackFailure(`The ${name} sound`, error);
+        return false;
+      }
     };
 
     if (context.state === 'running') {
-      start();
-    } else {
-      context.resume().then(start).catch((error) => {
-        console.error('Could not resume sound effects:', error);
-      });
+      return safeStart();
     }
-    return true;
+    return context.resume().then(safeStart).catch((error) => {
+      reportPlaybackFailure(`The ${name} sound`, error);
+      return false;
+    });
   }
 
   function play(name, delay = 0) {
@@ -264,11 +323,13 @@
   }
 
   createControl();
-  window.DearPipSounds = Object.freeze({ play, queue, isEnabled: () => enabled, setAmbienceTheme });
-  if (enabled) fadeAmbienceToMood();
+  window.DearPipSounds = Object.freeze({ play, queue, isEnabled: () => enabled, isMuted: () => !enabled, subscribeMute, setAmbienceTheme });
   if (ambienceTracks) {
     const retryAmbience = () => {
-      if (enabled) fadeAmbienceToMood();
+      if (enabled) {
+        ambienceActivated = true;
+        fadeAmbienceToMood();
+      }
     };
     window.addEventListener('pointerdown', retryAmbience, { once: true });
     window.addEventListener('keydown', retryAmbience, { once: true });

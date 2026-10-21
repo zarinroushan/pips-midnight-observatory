@@ -13,7 +13,17 @@
   <script src="visitor-progress.js" defer></script>
   <script src="lullaby-lab.js" defer></script>
 </head>
-<body class="lullaby-page">
+<body class="atlas-page lullaby-page">
+  <div class="garden-day-atmosphere" aria-hidden="true">
+    <span class="garden-day-cloud garden-day-cloud--one"><svg viewBox="0 0 120 64"><path d="M25 51h69a18 18 0 0 0 1-36 29 29 0 0 0-54-1A19 19 0 0 0 25 51Z"/></svg></span>
+    <span class="garden-day-cloud garden-day-cloud--two"><svg viewBox="0 0 120 64"><path d="M25 51h69a18 18 0 0 0 1-36 29 29 0 0 0-54-1A19 19 0 0 0 25 51Z"/></svg></span>
+    <span class="garden-day-cloud garden-day-cloud--three"><svg viewBox="0 0 120 64"><path d="M25 51h69a18 18 0 0 0 1-36 29 29 0 0 0-54-1A19 19 0 0 0 25 51Z"/></svg></span>
+    <span class="garden-day-butterfly garden-day-butterfly--one"><svg viewBox="0 0 64 64"><path d="M29 30C21 7 4 9 8 25c2 9 10 14 20 10-8 15 1 23 8 9l-3-13zm6 0C43 7 60 9 56 25c-2 9-10 14-20 10 8 15-1 23-8 9l3-13z"/><path d="M31 27h2v18h-2z"/></svg></span>
+    <span class="garden-day-butterfly garden-day-butterfly--two"><svg viewBox="0 0 64 64"><path d="M29 30C21 7 4 9 8 25c2 9 10 14 20 10-8 15 1 23 8 9l-3-13zm6 0C43 7 60 9 56 25c-2 9-10 14-20 10 8 15-1 23-8 9l3-13z"/><path d="M31 27h2v18h-2z"/></svg></span>
+    <span class="garden-day-butterfly garden-day-butterfly--three"><svg viewBox="0 0 64 64"><path d="M29 30C21 7 4 9 8 25c2 9 10 14 20 10-8 15 1 23 8 9l-3-13zm6 0C43 7 60 9 56 25c-2 9-10 14-20 10 8 15-1 23-8 9l3-13z"/><path d="M31 27h2v18h-2z"/></svg></span>
+    <span class="garden-day-pollen garden-day-pollen--one">✧</span>
+    <span class="garden-day-pollen garden-day-pollen--two">✦</span>
+  </div>
   <a class="lullaby-skip" href="#lullabyControls">Skip to the Lullaby Lab</a>
   <header class="lullaby-header">
     <a class="lullaby-brand" href="index.html" aria-label="Dear Pip home"><img class="brand-mascot__image" src="assets/pip.png" alt="" aria-hidden="true"> DEAR PIP <span>/</span> THE LULLABY LAB</a>
@@ -24,55 +34,187 @@
     <section class="lullaby-intro" aria-labelledby="lullabyTitle">
       <p class="lullaby-eyebrow">A QUIET CORNER OF THE MIDNIGHT NURSERY</p>
       <h1 id="lullabyTitle">The <em>Lullaby Lab</em></h1>
-      <p>Make a tiny, original music-box hum. Sound begins only when you ask for it.</p>
+      <p>Choose a room, gather a few gentle sounds, and settle in with Pip.</p>
     </section>
-    <section class="lullaby-panel" id="lullabyControls" aria-labelledby="soundTitle">
-      <div class="lullaby-panel__heading">
-        <p class="lullaby-eyebrow">PROCEDURAL SOUND · MADE IN YOUR BROWSER</p>
-        <h2 id="soundTitle">A little room-tone</h2>
-        <p>No recordings or downloaded songs; these soft tones are generated locally with Web Audio.</p>
+    <section class="lullaby-stage" id="lullabyExperience" data-scene="sleeping" aria-label="Pip's bedtime ambience">
+      <div class="lullaby-stage__backdrops" aria-hidden="true">
+        <div class="lullaby-stage__backdrop is-active" data-scene-backdrop="sleeping"><img src="assets/lullaby-lab/images/pip_room_sleeping.jpg" alt=""></div>
+        <div class="lullaby-stage__backdrop" data-scene-backdrop="rain"><img src="assets/lullaby-lab/images/pip_room_rain.png" alt=""></div>
+        <div class="lullaby-stage__backdrop" data-scene-backdrop="wind"><img src="assets/lullaby-lab/images/pip_room_wind.png" alt=""></div>
+        <div class="lullaby-stage__backdrop" data-scene-backdrop="fireplace"><img src="assets/lullaby-lab/images/pip_room_fireplace.png" alt=""></div>
+        <div class="lullaby-stage__shade"></div>
+        <div class="lullaby-stage__effects lullaby-stage__effects--rain"><i></i><i></i><i></i><i></i></div>
+        <div class="lullaby-stage__effects lullaby-stage__effects--wind"><i></i><i></i><i></i></div>
+        <div class="lullaby-stage__effects lullaby-stage__effects--fire"></div>
+        <div class="lullaby-stage__effects lullaby-stage__effects--sleep"><i>✦</i><i>✧</i><i>✦</i></div>
       </div>
-      <div class="lullaby-controls">
-        <button class="lullaby-button lullaby-button--primary" id="lullabyPlay" type="button">Start the music box</button>
-        <button class="lullaby-button" id="lullabyMute" type="button" aria-pressed="false" disabled>Mute</button>
-        <label class="lullaby-volume" for="lullabyVolume">Volume <input id="lullabyVolume" type="range" min="0" max="0.2" step="0.01" value="0.08" disabled></label>
-      </div>
-      <p class="lullaby-status" id="lullabyStatus" role="status" aria-live="polite">Sound is off. Start the music box whenever you are ready.</p>
+
+      <details class="lullaby-settings" id="lullabyControls" open>
+        <summary><span aria-hidden="true">♫</span> Sound settings</summary>
+        <section class="lullaby-panel" aria-labelledby="soundTitle">
+          <div class="lullaby-panel__heading">
+            <p class="lullaby-eyebrow">A GENTLE LITTLE SOUND MIXER</p>
+            <h2 id="soundTitle">A little room-tone</h2>
+            <p>Mix the room sounds you like. Gentle Lullaby Tones will arrive in a future update.</p>
+          </div>
+          <div class="lullaby-mixer" id="lullabyMixer">
+            <div class="lullaby-mixer__layers" aria-label="Sound layers">
+              <div class="lullaby-layer" data-audio-layer="rain">
+                <label><input type="checkbox" data-layer-toggle="rain"><span aria-hidden="true">☔</span> Rain</label>
+                <input type="range" data-layer-volume="rain" min="0" max="1" step="0.01" value="0.45" aria-label="Rain volume">
+                <audio data-layer-audio preload="none" loop src="assets/lullaby-lab/audio/normalized/rain.mp3"></audio>
+              </div>
+              <div class="lullaby-layer" data-audio-layer="wind">
+                <label><input type="checkbox" data-layer-toggle="wind"><span aria-hidden="true">༄</span> Soft wind</label>
+                <input type="range" data-layer-volume="wind" min="0" max="1" step="0.01" value="0.3" aria-label="Soft wind volume">
+                <audio data-layer-audio preload="none" loop src="assets/lullaby-lab/audio/normalized/soft-wind.mp3"></audio>
+              </div>
+              <div class="lullaby-layer" data-audio-layer="crickets">
+                <label><input type="checkbox" data-layer-toggle="crickets"><span aria-hidden="true">♧</span> Nighttime crickets</label>
+                <input type="range" data-layer-volume="crickets" min="0" max="1" step="0.01" value="0.25" aria-label="Nighttime crickets volume">
+                <audio data-layer-audio preload="none" loop src="assets/lullaby-lab/audio/normalized/nighttime-crickets.mp3"></audio>
+              </div>
+              <div class="lullaby-layer" data-audio-layer="fireplace">
+                <label><input type="checkbox" data-layer-toggle="fireplace"><span aria-hidden="true">♨</span> Fireplace</label>
+                <input type="range" data-layer-volume="fireplace" min="0" max="1" step="0.01" value="0.25" aria-label="Fireplace volume">
+                <audio data-layer-audio preload="none" loop src="assets/lullaby-lab/audio/normalized/fireplace.mp3"></audio>
+              </div>
+              <div class="lullaby-layer" data-audio-layer="tones">
+                <label><input type="checkbox" data-layer-toggle="tones"><span aria-hidden="true">♫</span> Gentle Lullaby Tones</label>
+                <input type="range" data-layer-volume="tones" min="0" max="1" step="0.01" value="0.35" aria-label="Lullaby tones volume">
+                <audio data-layer-audio preload="none" loop src="assets/lullaby-lab/audio/normalized/gentle-lullaby-tones.mp3"></audio>
+              </div>
+            </div>
+          </div>
+          <button class="lullaby-button lullaby-reset" id="lullabyReset" type="button">Reset mix</button>
+        </section>
+      </details>
+
+      <nav class="lullaby-scenes" aria-label="Choose a room scene">
+        <p>ROOM SCENES</p>
+        <button type="button" data-scene-select="sleeping" aria-pressed="true"><span aria-hidden="true">☾</span><span>Sleeping</span></button>
+        <button type="button" data-scene-select="rain" aria-pressed="false"><span aria-hidden="true">☔</span><span>Rainy Night</span></button>
+        <button type="button" data-scene-select="wind" aria-pressed="false"><span aria-hidden="true">༄</span><span>Windy Night</span></button>
+        <button type="button" data-scene-select="fireplace" aria-pressed="false"><span aria-hidden="true">♨</span><span>Fireplace</span></button>
+      </nav>
+
+      <section class="lullaby-player" aria-label="Ambience playback controls">
+        <div class="lullaby-player__transport">
+          <button class="lullaby-button lullaby-button--primary" id="lullabyPlay" type="button" aria-label="Play ambience">▶</button>
+          <button class="lullaby-button" id="lullabyPause" type="button" aria-label="Pause ambience" disabled>Ⅱ</button>
+          <button class="lullaby-button" id="lullabyStop" type="button" aria-label="Stop ambience" disabled>■</button>
+        </div>
+        <div class="lullaby-player__activity" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+        <p class="lullaby-player__active" id="lullabyActiveLayers">No sounds playing</p>
+        <label class="lullaby-volume" for="lullabyVolume">Volume <input id="lullabyVolume" type="range" min="0" max="1" step="0.01" value="0.35" aria-label="Master volume"></label>
+        <label class="lullaby-timer" for="lullabySleepTimer">Timer <select id="lullabySleepTimer"><option value="0">Off</option><option value="5">5 min</option><option value="15">15 min</option><option value="30">30 min</option><option value="60">60 min</option></select></label>
+        <p class="lullaby-status" id="lullabyStatus" role="status" aria-live="polite">Sound is off. Play a layer whenever you are ready.</p>
+      </section>
+      <p class="lullaby-scene-status" id="lullabySceneStatus" role="status" aria-live="polite">Sleeping room selected. Audio is off.</p>
     </section>
 
     <section class="lullaby-nightlight" id="lullabyNightlight" aria-labelledby="nightlightTitle">
       <div class="lullaby-nightlight__content">
-        <p class="lullaby-eyebrow">A LITTLE POOL OF MOONLIGHT</p>
+        <p class="lullaby-eyebrow">LOOK CLOSELY THROUGH THE GARDEN</p>
         <h2 id="nightlightTitle">Find a hidden star</h2>
-        <p>Move a pointer across the sky, or switch on the small-screen nightlight.</p>
-        <button class="lullaby-button" id="lullabyReveal" type="button" aria-pressed="false">Turn on the nightlight</button>
+        <p id="nightlightInstructions">Drag Pip around the garden to explore. Drag the torch handle to aim its light in any direction. Tap each glowing star to collect it.</p>
+        <div class="lullaby-discovery-actions">
+          <button class="lullaby-button lullaby-button--primary" id="lullabySearchStart" type="button">Light up the garden</button>
+          <button class="lullaby-button" id="lullabyReplayDiscovery" type="button">Restart search</button>
+        </div>
+        <p class="lullaby-status" id="lullabyDiscoveryStatus" role="status" aria-live="polite">Pip has tucked a little star among the garden leaves.</p>
       </div>
-      <span class="lullaby-hidden-star" aria-hidden="true">✦</span>
+      <div class="lullaby-garden-scene" id="lullabyGardenScene" data-mode="night" role="group" aria-label="Night garden search area. Drag Pip to explore, then drag the torch handle to aim." aria-describedby="nightlightInstructions">
+        <svg class="lullaby-garden-art" viewBox="0 0 900 360" preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
+          <defs><linearGradient id="lullabySky" x2="0" y2="1"><stop offset="0" stop-color="#202345"/><stop offset="1" stop-color="#49486e"/></linearGradient><linearGradient id="lullabyDaySky" x2="0" y2="1"><stop offset="0" stop-color="#a9d7f0"/><stop offset="1" stop-color="#e8f1f2"/></linearGradient></defs>
+          <rect class="garden-sky" width="900" height="360" fill="url(#lullabySky)"/>
+          <g class="garden-stars" fill="#fff0bf"><circle cx="100" cy="49" r="2"/><circle cx="202" cy="84" r="1.4"/><circle cx="393" cy="38" r="1.8"/><circle cx="733" cy="70" r="1.6"/><circle cx="831" cy="34" r="2"/></g>
+          <g class="garden-clouds" fill="#e1dcf2" opacity=".82"><path d="M95 142c-24 0-28-31-3-36 5-22 39-26 51-6 25-1 29 36 4 42Z"/><path d="M681 126c-20 0-23-26-2-30 4-19 32-22 42-5 21-1 24 30 3 35Z"/></g>
+          <path class="garden-hill garden-hill--far" d="M0 230Q160 148 318 234T620 220T900 215V360H0Z"/>
+          <path class="garden-ground" d="M0 276Q168 217 324 275T650 258T900 275V360H0Z"/>
+          <g class="garden-midplants"><path d="M0 308Q90 216 179 304Q242 206 311 300Q387 219 459 302Q537 208 615 299Q695 202 766 305Q835 222 900 292V360H0Z"/><path d="M88 323q-26-63 8-99q25 48 2 99m-6-31q-37-36-57-18q22 30 57 28m107 21q-7-64 31-87q12 56-22 91m501-2q-7-57 23-84q17 46-10 87"/></g>
+          <g class="garden-flowers"><circle cx="146" cy="290" r="7"/><circle cx="151" cy="283" r="5"/><circle cx="141" cy="282" r="5"/><circle cx="753" cy="297" r="7"/><circle cx="758" cy="290" r="5"/><circle cx="748" cy="289" r="5"/></g>
+          <g class="garden-foreground"><path d="M0 360V308q44-73 103-27 30-72 81-28 43-44 93 8 42-48 95 5 39-28 83 10 54-61 112-13 43-43 91-2 45-52 96-3 58-49 110 9v93Z"/><path d="M68 360q4-73 34-101 30 49 9 101m90 0q-5-77 29-105 27 54-6 105m488 0q-4-78 28-102 27 57-5 102m105 0q8-70 38-88 21 47-8 88"/></g>
+        </svg>
+        <div class="lullaby-search-veil" aria-hidden="true"></div>
+        <div class="lullaby-search-beam" id="lullabySearchBeam" aria-hidden="true"></div>
+        <button class="lullaby-torch-aim-handle" id="lullabyTorchAimHandle" type="button" aria-label="Drag this handle to aim Pip’s torch in any direction." aria-describedby="nightlightInstructions" hidden disabled>◎ <span>Aim</span></button>
+        <button class="lullaby-hidden-target" id="lullabyHiddenTarget" data-star-index="0" type="button" aria-label="Collect hidden star 1" aria-hidden="true" tabindex="-1" disabled>★</button>
+        <button class="lullaby-hidden-target" data-star-index="1" type="button" aria-label="Collect hidden star 2" aria-hidden="true" tabindex="-1" disabled>★</button>
+        <button class="lullaby-hidden-target" data-star-index="2" type="button" aria-label="Collect hidden star 3" aria-hidden="true" tabindex="-1" disabled>★</button>
+        <button class="lullaby-hidden-target" data-star-index="3" type="button" aria-label="Collect hidden star 4" aria-hidden="true" tabindex="-1" disabled>★</button>
+        <button class="lullaby-hidden-target" data-star-index="4" type="button" aria-label="Collect hidden star 5" aria-hidden="true" tabindex="-1" disabled>★</button>
+        <button class="lullaby-hidden-target lullaby-butterfly-target" id="lullabyButterflyTarget" data-butterfly-index="0" type="button" aria-label="Catch butterfly 1" aria-hidden="true" tabindex="-1" disabled>🦋</button>
+        <button class="lullaby-hidden-target lullaby-butterfly-target" data-butterfly-index="1" type="button" aria-label="Catch butterfly 2" aria-hidden="true" tabindex="-1" disabled>🦋</button>
+        <button class="lullaby-hidden-target lullaby-butterfly-target" data-butterfly-index="2" type="button" aria-label="Catch butterfly 3" aria-hidden="true" tabindex="-1" disabled>🦋</button>
+        <img class="lullaby-pip-art lullaby-pip-art--night" data-pip-art="night" src="assets/lullaby-lab/images/pip-torch.png" alt="Pip holding a torch in the nighttime garden" draggable="false">
+        <img class="lullaby-pip-art lullaby-pip-art--day" data-pip-art="day" src="assets/lullaby-lab/images/pip-butterfly-net.png.png" alt="Pip holding a butterfly net in the daytime garden" draggable="false">
+      </div>
     </section>
 
     <section class="lullaby-lab-grid">
       <section class="lullaby-panel" aria-labelledby="bubbleTitle">
-        <p class="lullaby-eyebrow">KEEP A THOUGHT, ON THIS DEVICE</p>
+        <p class="lullaby-eyebrow">KEEP A LITTLE WISH, ON THIS DEVICE</p>
         <h2 id="bubbleTitle">Dream bubbles</h2>
+        <p>Add a small wish, goal, or task. Your list stays in this browser.</p>
+        <div class="lullaby-bubble-prompts" role="group" aria-label="Wish and task starters">
+          <button type="button" class="lullaby-prompt" data-bubble-prompt="Finish reading a book">Finish a book</button>
+          <button type="button" class="lullaby-prompt" data-bubble-prompt="Draw something new">Draw something new</button>
+          <button type="button" class="lullaby-prompt" data-bubble-prompt="Try a new recipe">Try a new recipe</button>
+        </div>
         <form id="dreamBubbleForm" class="lullaby-bubble-form">
-          <label for="dreamBubbleInput">A small idea for later</label>
-          <textarea id="dreamBubbleInput" maxlength="240" rows="3" placeholder="A moon garden with a tiny gate…"></textarea>
-          <button class="lullaby-button" type="submit">Tuck it in a bubble</button>
+          <label for="dreamBubbleInput">A wish, goal, or task to do</label>
+          <textarea id="dreamBubbleInput" maxlength="180" rows="3" placeholder="Take a walk in the garden"></textarea>
+          <div class="lullaby-bubble-form__actions">
+            <button class="lullaby-button" id="dreamBubbleCreate" type="submit">Create bubble</button>
+            <label class="lullaby-sound-option"><input type="checkbox" id="bubbleSound"> Play a tiny chime when a wish is added</label>
+            <button class="lullaby-button lullaby-button--quiet" type="button" id="dreamBubbleClear">Clear all</button>
+          </div>
         </form>
         <p id="dreamBubbleStatus" class="lullaby-status" role="status" aria-live="polite"></p>
         <ul id="dreamBubbleList" class="lullaby-bubble-list" aria-label="Your saved dream bubbles"></ul>
+        <dialog class="lullaby-wish-dialog" id="dreamBubbleDialog" aria-labelledby="dreamBubbleDialogTitle">
+          <div class="lullaby-wish-dialog__content">
+            <p class="lullaby-eyebrow">A LITTLE WISH TO KEEP</p>
+            <h3 id="dreamBubbleDialogTitle">Your wish</h3>
+            <p class="lullaby-wish-dialog__text" id="dreamBubbleDialogText"></p>
+            <form id="dreamBubbleEditForm" class="lullaby-wish-edit" hidden>
+              <label for="dreamBubbleEditInput">Edit your wish</label>
+              <textarea id="dreamBubbleEditInput" maxlength="180" rows="4"></textarea>
+              <div class="lullaby-wish-dialog__actions">
+                <button class="lullaby-button lullaby-button--primary" id="dreamBubbleEditSave" type="button">Save wish</button>
+                <button class="lullaby-button" id="dreamBubbleEditCancel" type="button">Cancel edit</button>
+              </div>
+            </form>
+            <div class="lullaby-wish-dialog__actions">
+              <button class="lullaby-button" id="dreamBubbleComplete" type="button" aria-pressed="false">Mark as done</button>
+              <button class="lullaby-button" id="dreamBubbleEdit" type="button">Edit</button>
+              <button class="lullaby-button lullaby-button--quiet" id="dreamBubbleDelete" type="button">Delete this wish</button>
+              <button class="lullaby-button" id="dreamBubbleClose" type="button" aria-label="Close wish details">Close</button>
+            </div>
+          </div>
+        </dialog>
       </section>
       <section class="lullaby-panel lullaby-game" aria-labelledby="gameTitle">
         <p class="lullaby-eyebrow">A TINY LISTENING GAME</p>
         <h2 id="gameTitle">Echo Pip's three notes</h2>
         <p>Listen, then repeat the pattern in order. Each button also plays its own soft note.</p>
         <button class="lullaby-button" id="lullabyGameStart" type="button">Listen to the pattern</button>
+        <div class="lullaby-game__controls">
+          <button class="lullaby-button" id="lullabyGameReplay" type="button" disabled>Replay Pattern</button>
+          <button class="lullaby-button" id="lullabyGameMute" type="button" aria-pressed="false">Mute</button>
+          <button class="lullaby-button" id="lullabyGameRestart" type="button">Restart</button>
+        </div>
         <div class="lullaby-game__notes" role="group" aria-label="Choose one of three notes">
-          <button class="lullaby-note" type="button" data-note="0">Low moon</button>
-          <button class="lullaby-note" type="button" data-note="1">Middle star</button>
-          <button class="lullaby-note" type="button" data-note="2">High cloud</button>
+          <button class="lullaby-note" type="button" data-note="0" aria-label="Play the low moon note" disabled>Low moon</button>
+          <button class="lullaby-note" type="button" data-note="1" aria-label="Play the middle star note" disabled>Middle star</button>
+          <button class="lullaby-note" type="button" data-note="2" aria-label="Play the high cloud note" disabled>High cloud</button>
         </div>
         <p id="lullabyGameStatus" class="lullaby-status" role="status" aria-live="polite">Start a round when you are ready.</p>
+        <div class="lullaby-music-box" id="lullabyMusicBox" aria-hidden="true">
+          <img src="assets/pip-Lullaby Box.png" alt="" draggable="false">
+          <span class="lullaby-music-box__particles"><i>♪</i><i>♫</i><i>♪</i></span>
+        </div>
       </section>
     </section>
   </main>
