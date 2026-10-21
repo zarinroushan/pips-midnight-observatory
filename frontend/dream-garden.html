@@ -56,7 +56,7 @@
     <section class="garden-scene" id="gardenScene" aria-label="Interactive dream garden">
       <svg class="garden-landscape" viewBox="0 0 1200 590" role="img" aria-labelledby="gardenSceneTitle gardenSceneDesc">
         <title id="gardenSceneTitle">Pip's moonlit dream garden</title>
-        <desc id="gardenSceneDesc">An enchanted violet garden beneath the crescent moon, with rolling hills, glowing mushrooms, a little pond, and places to plant dream seeds.</desc>
+        <desc id="gardenSceneDesc">An enchanted violet garden beneath the crescent moon, with rolling hills, glowing mushrooms, tiny decorative background stars, a little pond, and places to plant dream seeds. Saved-wish stars are separate, clickable indicators.</desc>
         <defs>
           <linearGradient id="garden-sky" x1="0" y1="0" x2="0" y2="1">
             <stop stop-color="#242044"/>
@@ -87,11 +87,11 @@
         <circle cx="1002" cy="112" r="100" fill="url(#garden-moon-glow)"/>
         <circle cx="1002" cy="112" r="45" fill="#fff0c8"/>
         <circle cx="1023" cy="91" r="42" fill="#292344"/>
-        <g fill="#ffe8a6" filter="url(#garden-glow)">
-          <path d="M180 142l5 13 13 5-13 5-5 13-5-13-13-5 13-5z"/>
-          <path d="M729 104l4 10 10 4-10 4-4 10-4-10-10-4 10-4z"/>
-          <path d="M1105 230l5 12 12 5-12 5-5 12-5-12-12-5 12-5z"/>
-          <circle cx="532" cy="179" r="4"/><circle cx="866" cy="204" r="3"/>
+        <g class="garden-background-stars" fill="#ffe8a6" opacity=".58">
+          <path d="M180 142l1.5 4 4 1.5-4 1.5-1.5 4-1.5-4-4-1.5 4-1.5z"/>
+          <path d="M729 104l1.2 3.3 3.3 1.2-3.3 1.2-1.2 3.3-1.2-3.3-3.3-1.2 3.3-1.2z"/>
+          <path d="M1105 230l1.5 4 4 1.5-4 1.5-1.5 4-1.5-4-4-1.5 4-1.5z"/>
+          <circle cx="532" cy="179" r="1.5"/><circle cx="866" cy="204" r="1.2"/>
         </g>
         <path d="M0 355Q161 296 306 350T598 342T900 334T1200 340V590H0Z" fill="#374253"/>
         <path d="M0 403Q182 325 376 391T750 380T1200 389V590H0Z" fill="url(#garden-hill)"/>
@@ -113,7 +113,7 @@
         </g>
       </svg>
 
-      <div class="garden-wish-stars" id="gardenWishStars" role="group" aria-label="Saved wishes among the garden stars"></div>
+      <div class="garden-wish-stars" id="gardenWishStars" role="group" aria-label="Saved wishes among the garden stars" hidden></div>
       <p class="garden-wish-star-count" id="gardenWishStarCount" role="status" aria-live="polite">0 wish stars</p>
       <div class="garden-plots" id="gardenPlots" aria-label="Garden planting plots"></div>
 
@@ -207,12 +207,15 @@
         </div>
         <div class="garden-journal-block garden-journal-block--fulfilled">
           <h3>Dreams fulfilled</h3>
+          <p class="garden-journal-explainer">Only a wish you deliberately mark complete appears here. Planting flowers is a separate garden activity.</p>
           <ul id="gardenFulfilledDreamJournal" class="garden-journal-list" aria-live="polite" aria-relevant="additions text">
             <li class="garden-journal-empty">No dreams fulfilled yet.</li>
           </ul>
         </div>
         <div class="garden-journal-block">
           <h3>Private wishes</h3>
+          <p class="garden-journal-explainer">Choose one saved wish to mark it fulfilled, or remove it from this visitor’s private garden.</p>
+          <p class="garden-private-load-status" id="gardenPrivateDreamLoadStatus" role="status" aria-live="polite">Loading private wishes for this visitor…</p>
           <ul id="gardenPrivateDreamJournal" class="garden-journal-list" aria-live="polite">
             <li class="garden-journal-empty">Your private wishes will appear here.</li>
           </ul>
@@ -249,6 +252,12 @@
             <small id="gardenSelectedGuardianTitle"></small>
             <small class="garden-selected-guardian__wish-count" id="gardenSelectedGuardianWishCount" role="status" aria-live="polite">Loading shared wishes…</small>
             <p id="gardenSelectedGuardianDescription"></p>
+            <div class="garden-selected-guardian__private">
+              <small>Your private wishes with this friend</small>
+              <ul id="gardenSelectedGuardianPrivateWishes" class="garden-selected-guardian__private-list">
+                <li class="garden-journal-empty">No private wishes with this friend yet.</li>
+              </ul>
+            </div>
           </div>
         </div>
         <label for="gardenPrivateDream">Your wish <span>(up to 250 characters)</span></label>

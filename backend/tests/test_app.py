@@ -258,6 +258,31 @@ class GuestbookAndGardenApiTests(unittest.TestCase):
         self.assertIn("ORDER BY created_at DESC, id DESC", self.connection.last_query)
         self.assertEqual(self.client.get("/api/guestbook?limit=101").status_code, 400)
 
+    def test_production_guestbook_preflight_uses_exact_credentialed_origin(self):
+        origin = "https://dear-pip-pearl.vercel.app"
+        with patch.dict(os.environ, {"CORS_ALLOWED_ORIGINS": origin}):
+            response = self.client.options(
+                "/api/guestbook",
+                headers={
+                    "Origin": origin,
+                    "Access-Control-Request-Method": "POST",
+                    "Access-Control-Request-Headers": "content-type",
+                },
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers["Access-Control-Allow-Origin"], origin)
+        self.assertEqual(response.headers["Access-Control-Allow-Credentials"], "true")
+        self.assertIn("POST", response.headers["Access-Control-Allow-Methods"])
+        self.assertIn("Content-Type", response.headers["Access-Control-Allow-Headers"])
+
+    def test_workspace_preview_origin_is_allowed_by_local_defaults(self):
+        origin = "http://127.0.0.1:8766"
+        with patch.object(backend_app, "production_mode", False), patch.dict(
+            os.environ, {}, clear=True
+        ):
+            response = self.client.get("/api/health", headers={"Origin": origin})
+        self.assertEqual(response.headers["Access-Control-Allow-Origin"], origin)
+
     def test_guestbook_moderation_requires_owner_and_only_transitions_pending(self):
         token = "guestbook-review-test-token-that-is-long-enough"
         with patch.dict(os.environ, {"ATLAS_ADMIN_TOKEN": token}):
@@ -352,6 +377,143 @@ class GuestbookAndGardenApiTests(unittest.TestCase):
                     {**self.empty_state, "creatureLayout": layout},
                 )
                 self.assertEqual(response.status_code, 400)
+
+    def test_flower_bloom_does_not_reject_or_fulfill_legacy_wish_flags(self):
+        legacy_state = {
+            **self.empty_state,
+            "fulfilled": ["moth"],
+            "plots": [{"seed": "moonblush", "stage": 2}, None, None, None, None],
+            "creatures": ["moth"],
+            "plotOwners": ["moth", None, None, None, None],
+        }
+        saved = self.save_state(self.client, 0, legacy_state)
+        self.assertEqual(saved.status_code, 200)
+        restored = self.client.get("/api/garden/state").get_json()["state"]
+        self.assertEqual(restored["fulfilled"], ["moth"])
+        self.assertNotIn("fulfilledWishes", restored)
+
+    def test_flower_growth_and_garden_reset_do_not_mark_wishes_fulfilled(self):
+        active = {
+            **self.empty_state,
+            "plots": [{"seed": "moonblush", "stage": 2}, None, None, None, None],
+            "creatures": ["moth"],
+            "plotOwners": ["moth", None, None, None, None],
+            "dreamJournal": [{
+                "id": "still-active",
+                "wish": "Spend more time making art.",
+                "creature": "moth",
+                "createdAt": "2026-01-01T00:00:00Z",
+            }],
+        }
+        self.assertEqual(self.save_state(self.client, 0, active).status_code, 200)
+        bloomed = self.client.get("/api/garden/state").get_json()["state"]
+        self.assertEqual(bloomed["dreamJournal"][0]["id"], "still-active")
+        self.assertNotIn("fulfilledWishes", bloomed)
+
+        reset = self.save_state(self.client, 1, self.empty_state)
+        self.assertEqual(reset.status_code, 200)
+        cleared = self.client.get("/api/garden/state").get_json()["state"]
+        self.assertEqual(cleared["fulfilled"], [])
+        self.assertEqual(cleared.get("fulfilledWishes", []), [])
+        self.assertEqual(cleared.get("dreamJournal", []), [])
+
+    def test_fulfillment_is_explicit_specific_visitor_scoped_and_preserves_other_wishes(self):
+        state = {
+            **self.empty_state,
+            "fulfilled": ["moth"],
+            "dreamJournal": [
+                {
+                    "id": "wish-one",
+                    "wish": "Finish my first story.",
+                    "creature": "moth",
+                    "createdAt": "2026-01-01T00:00:00Z",
+                },
+                {
+                    "id": "wish-two",
+                    "wish": "Learn to bake bread.",
+                    "creature": "rabbit",
+                    "createdAt": "2026-01-02T00:00:00Z",
+                },
+            ],
+        }
+        self.assertEqual(self.save_state(self.client, 0, state).status_code, 200)
+        response = self.client.post(
+            "/api/garden/wishes/wish-one/fulfill",
+            json={"revision": 1},
+            headers={"Origin": self.origin},
+        )
+        self.assertEqual(response.status_code, 200)
+        result = response.get_json()
+        self.assertEqual(result["revision"], 2)
+        self.assertEqual([wish["id"] for wish in result["state"]["dreamJournal"]], ["wish-two"])
+        fulfilled = result["state"]["fulfilledWishes"]
+        self.assertEqual(len(fulfilled), 1)
+        self.assertEqual(fulfilled[0]["id"], "wish-one")
+        self.assertEqual(fulfilled[0]["wish"], "Finish my first story.")
+        fulfilled_at = datetime.fromisoformat(fulfilled[0]["fulfilledAt"].replace("Z", "+00:00"))
+        self.assertGreater(fulfilled_at, datetime.fromisoformat("2026-01-01T00:00:00+00:00"))
+        self.assertEqual(result["state"]["fulfilled"], ["moth"])
+
+        old_client_state = {key: value for key, value in result["state"].items() if key != "fulfilledWishes"}
+        old_client_state["dreamJournal"] = []
+        preserved = self.save_state(self.client, 2, old_client_state)
+        self.assertEqual(preserved.status_code, 200)
+        reread = self.client.get("/api/garden/state").get_json()["state"]
+        self.assertEqual([wish["id"] for wish in reread["fulfilledWishes"]], ["wish-one"])
+        self.assertEqual(reread["dreamJournal"], [])
+
+        other = backend_app.app.test_client()
+        other.get("/api/garden/session", headers={"Origin": self.origin})
+        hidden = other.post(
+            "/api/garden/wishes/wish-two/fulfill",
+            json={"revision": 1},
+            headers={"Origin": self.origin},
+        )
+        self.assertEqual(hidden.status_code, 404)
+        self.assertEqual(other.get("/api/garden/state").get_json()["state"], None)
+
+    def test_fulfillment_rejects_invalid_targets_stale_revision_and_untrusted_origin(self):
+        state = {
+            **self.empty_state,
+            "dreamJournal": [{
+                "id": "active-wish",
+                "wish": "Take a walk under the stars.",
+                "creature": "bird",
+                "createdAt": "2026-01-03T00:00:00Z",
+            }],
+        }
+        self.assertEqual(self.save_state(self.client, 0, state).status_code, 200)
+        missing = self.client.post(
+            "/api/garden/wishes/other-wish/fulfill",
+            json={"revision": 1},
+            headers={"Origin": self.origin},
+        )
+        stale = self.client.post(
+            "/api/garden/wishes/active-wish/fulfill",
+            json={"revision": 0},
+            headers={"Origin": self.origin},
+        )
+        untrusted = self.client.post(
+            "/api/garden/wishes/active-wish/fulfill",
+            json={"revision": 1},
+        )
+        self.assertEqual(missing.status_code, 404)
+        self.assertEqual(stale.status_code, 409)
+        self.assertEqual(untrusted.status_code, 403)
+
+    def test_regular_state_save_cannot_invent_fulfilled_wishes(self):
+        forged = {
+            **self.empty_state,
+            "fulfilledWishes": [{
+                "id": "never-saved",
+                "wish": "Claim this happened.",
+                "creature": "fox",
+                "createdAt": "2026-01-01T00:00:00Z",
+                "fulfilledAt": "2026-01-02T00:00:00Z",
+            }],
+        }
+        response = self.save_state(self.client, 0, forged)
+        self.assertEqual(response.status_code, 400)
 
     def test_legacy_sprite_wish_remains_readable_without_public_active_count(self):
         legacy_state = {

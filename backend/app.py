@@ -1,7 +1,7 @@
 import os
 import threading
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from collections import defaultdict, deque
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -91,7 +91,9 @@ def garden_database_unavailable(error):
 def configured_origins():
     value = os.environ.get("CORS_ALLOWED_ORIGINS")
     if value is None:
-        value = "" if production_mode else "http://127.0.0.1:5500,http://localhost:5500"
+        value = "" if production_mode else (
+            "http://127.0.0.1:5500,http://localhost:5500,http://127.0.0.1:8766"
+        )
     origins = {item.strip().rstrip("/") for item in value.split(",") if item.strip()}
     trusted = set()
     for origin in origins:
@@ -144,7 +146,13 @@ def trusted_request_origin():
 
 @app.before_request
 def protect_garden_writes():
-    if request.path == "/api/garden/state" and request.method == "PUT":
+    garden_state_write = request.path == "/api/garden/state" and request.method == "PUT"
+    garden_wish_fulfillment = (
+        request.path.startswith("/api/garden/wishes/")
+        and request.path.endswith("/fulfill")
+        and request.method == "POST"
+    )
+    if garden_state_write or garden_wish_fulfillment:
         if not trusted_request_origin():
             return jsonify(error="A trusted site origin is required for Garden changes."), 403
     return None
@@ -160,13 +168,12 @@ def garden_state_conflict(current):
 
 def validate_garden_state(value):
     base_keys = {"version", "plots", "creatures", "plotOwners", "fulfilled"}
-    allowed_keys = (
-        base_keys,
-        base_keys | {"dreamJournal"},
-        base_keys | {"creatureLayout"},
-        base_keys | {"dreamJournal", "creatureLayout"},
-    )
-    if not isinstance(value, dict) or set(value) not in allowed_keys:
+    optional_keys = {"dreamJournal", "creatureLayout", "fulfilledWishes"}
+    if (
+        not isinstance(value, dict)
+        or not base_keys.issubset(value)
+        or set(value) - base_keys - optional_keys
+    ):
         return None
     if type(value["version"]) is not int or value["version"] != 1:
         return None
@@ -215,6 +222,44 @@ def validate_garden_state(value):
         })
     if len({entry["id"] for entry in normalized_journal}) != len(normalized_journal):
         return None
+    fulfilled_wishes = value.get("fulfilledWishes", [])
+    if not isinstance(fulfilled_wishes, list) or len(fulfilled_wishes) > 20:
+        return None
+    normalized_fulfilled_wishes = []
+    for entry in fulfilled_wishes:
+        if not isinstance(entry, dict) or set(entry) != {
+            "id", "wish", "creature", "createdAt", "fulfilledAt"
+        }:
+            return None
+        entry_id, wish, creature, created_at, fulfilled_at = (
+            entry["id"], entry["wish"], entry["creature"],
+            entry["createdAt"], entry["fulfilledAt"],
+        )
+        if (
+            not isinstance(entry_id, str) or not entry_id or len(entry_id) > 64
+            or not isinstance(wish, str) or not wish.strip() or len(wish) > 250
+            or not isinstance(creature, str) or creature not in GARDEN_CREATURE_SEEDS
+            or not isinstance(created_at, str) or not isinstance(fulfilled_at, str)
+        ):
+            return None
+        try:
+            datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+            datetime.fromisoformat(fulfilled_at.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+        normalized_fulfilled_wishes.append({
+            "id": entry_id,
+            "wish": wish.strip(),
+            "creature": creature,
+            "createdAt": created_at,
+            "fulfilledAt": fulfilled_at,
+        })
+    fulfilled_ids = {entry["id"] for entry in normalized_fulfilled_wishes}
+    if (
+        len(fulfilled_ids) != len(normalized_fulfilled_wishes)
+        or fulfilled_ids.intersection(entry["id"] for entry in normalized_journal)
+    ):
+        return None
 
     normalized_plots = []
     for plot, owner in zip(plots, owners):
@@ -242,16 +287,6 @@ def validate_garden_state(value):
         ):
             return None
         normalized_plots.append({"seed": seed, "stage": stage})
-
-    for creature in fulfilled:
-        if creature not in creatures or not any(
-            plot is not None
-            and plot["stage"] == 2
-            and plot["seed"] == GARDEN_CREATURE_SEEDS[creature]
-            and owners[index] == creature
-            for index, plot in enumerate(normalized_plots)
-        ):
-            return None
 
     normalized = {
         "version": 1,
@@ -281,6 +316,8 @@ def validate_garden_state(value):
                 return None
             normalized_layout[creature] = {"x": x, "y": y, "scale": scale}
         normalized["creatureLayout"] = normalized_layout
+    if "fulfilledWishes" in value:
+        normalized["fulfilledWishes"] = normalized_fulfilled_wishes
     return normalized
 
 
@@ -641,6 +678,29 @@ def put_garden_state():
                 "SELECT revision, state FROM garden_states WHERE visitor_id = %s FOR UPDATE",
                 (visitor_id,),
             ).fetchone()
+            if current is not None:
+                current_state = validate_garden_state(current[1])
+                if current_state is None:
+                    app.logger.error("Garden state could not be validated while saving.")
+                    return jsonify(error="Garden storage contains an invalid state."), 503
+                current_fulfilled_wishes = current_state.get("fulfilledWishes", [])
+                if "fulfilledWishes" not in state:
+                    state["fulfilledWishes"] = current_fulfilled_wishes
+                else:
+                    current_by_id = {
+                        entry["id"]: entry for entry in current_fulfilled_wishes
+                    }
+                    if any(
+                        current_by_id.get(entry["id"]) != entry
+                        for entry in state["fulfilledWishes"]
+                    ):
+                        return jsonify(
+                            error="Only an existing private wish can be marked fulfilled."
+                        ), 400
+            elif state.get("fulfilledWishes"):
+                return jsonify(
+                    error="Only an existing private wish can be marked fulfilled."
+                ), 400
             if current is None and expected_revision == 0:
                 inserted = connection.execute(
                     """
@@ -682,6 +742,80 @@ def put_garden_state():
     if revision is not None:
         return jsonify(revision=revision), 200
     return garden_state_conflict(current)
+
+
+@app.post("/api/garden/wishes/<wish_id>/fulfill")
+def fulfill_garden_wish(wish_id):
+    visitor_id, error_response = require_garden_visitor_id()
+    if error_response:
+        return error_response
+    if not wish_id or len(wish_id) > 64:
+        return jsonify(error="A valid private wish ID is required."), 400
+    if not request.is_json:
+        return jsonify(error="A JSON request body is required."), 400
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict) or set(payload) != {"revision"}:
+        return jsonify(error="The current Garden revision is required."), 400
+    expected_revision = payload["revision"]
+    if (
+        not isinstance(expected_revision, int)
+        or isinstance(expected_revision, bool)
+        or expected_revision < 0
+    ):
+        return jsonify(error="Revision must be a non-negative integer."), 400
+    connection_url = database_url()
+    if not connection_url:
+        app.logger.error("Garden database request failed (DATABASE_URL is not configured).")
+        return jsonify(error="Garden storage is temporarily unavailable."), 503
+
+    try:
+        with connect_database(connection_url) as connection:
+            current = connection.execute(
+                "SELECT revision, state FROM garden_states WHERE visitor_id = %s FOR UPDATE",
+                (visitor_id,),
+            ).fetchone()
+            if current is None:
+                return jsonify(error="That private wish was not found in this garden."), 404
+            if current[0] != expected_revision:
+                return garden_state_conflict(current)
+            state = validate_garden_state(current[1])
+            if state is None:
+                app.logger.error("Garden state could not be validated while fulfilling a wish.")
+                return jsonify(error="Garden storage contains an invalid state."), 503
+            journal = state.get("dreamJournal", [])
+            wish = next((entry for entry in journal if entry["id"] == wish_id), None)
+            if wish is None:
+                return jsonify(error="That active private wish was not found in this garden."), 404
+            fulfilled_wishes = state.get("fulfilledWishes", [])
+            if len(fulfilled_wishes) >= 20:
+                return jsonify(error="The fulfilled-wish journal is full. Reset the garden to make room."), 409
+            state["dreamJournal"] = [entry for entry in journal if entry["id"] != wish_id]
+            state["fulfilledWishes"] = [
+                *fulfilled_wishes,
+                {
+                    **wish,
+                    "fulfilledAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                },
+            ]
+            updated = connection.execute(
+                """
+                UPDATE garden_states
+                SET revision = revision + 1, state = %s, updated_at = CURRENT_TIMESTAMP
+                WHERE visitor_id = %s AND revision = %s
+                RETURNING revision
+                """,
+                (Jsonb(state), visitor_id, expected_revision),
+            ).fetchone()
+            if updated is None:
+                current = connection.execute(
+                    "SELECT revision, state FROM garden_states WHERE visitor_id = %s",
+                    (visitor_id,),
+                ).fetchone()
+                return garden_state_conflict(current)
+    except psycopg.Error as error:
+        return garden_database_unavailable(error)
+
+    return jsonify(revision=updated[0], state=state), 200
 
 
 def run_server():

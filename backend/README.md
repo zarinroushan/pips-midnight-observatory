@@ -8,8 +8,9 @@ environment settings in production. Never place database credentials in the
 frontend or commit them.
 
 Set `CORS_ALLOWED_ORIGINS` to a comma-separated list of exact frontend origins.
-For local Live Server, the default allows `http://127.0.0.1:5500` and
-`http://localhost:5500`. The Garden preserves the frontend hostname when
+For local development, the default allows VS Code Live Server at
+`http://127.0.0.1:5500` or `http://localhost:5500`, and the workspace preview at
+`http://127.0.0.1:8766`. The Garden preserves the frontend hostname when
 selecting its local API host so both services remain same-site. For a deployed
 frontend, configure the exact origin explicitly. The Dream Garden API base can
 be set in its `dear-pip-api-base` meta element; blank uses localhost only when
@@ -119,7 +120,17 @@ the robust option.
   `creatureLayout` state map stores validated per-visitor animal positions
   (0–100 percent) and scale (0.65–1.5) in the existing JSONB state column; it
   does not require a database migration. The legacy `sprite` ID remains accepted
-  only to keep previously saved Garden records readable.
+  only to keep previously saved Garden records readable. The legacy `fulfilled`
+  guardian-ID list is retained when loading/saving old records but is not treated
+  as evidence that a dream was completed. New `fulfilledWishes` records contain
+  the wish text, guardian, saved timestamp, and server-set fulfillment timestamp.
+- `POST /api/garden/wishes/<wish_id>/fulfill` deliberately moves one existing
+  active wish from `dreamJournal` to `fulfilledWishes`. It requires the visitor's
+  signed session, a trusted `Origin`, and the current revision; the server
+  verifies the exact wish exists in that visitor's PostgreSQL Garden state.
+  Flower planting, growing, friend selection, and ordinary state saves cannot
+  create a fulfilled-wish record. This uses the existing JSONB column and needs
+  no database migration.
 - `GET /api/garden/wish-counts` returns public totals by guardian ID from
   currently persisted private-wish records. It never returns wish text or
   visitor identifiers.

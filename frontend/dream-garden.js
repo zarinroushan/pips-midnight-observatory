@@ -86,6 +86,7 @@ const creatureCount = document.querySelector('#gardenCreatureCount');
 const flowerJournal = document.querySelector('#gardenFlowerJournal');
 const creatureJournal = document.querySelector('#gardenCreatureJournal');
 const fulfilledDreamJournal = document.querySelector('#gardenFulfilledDreamJournal');
+const privateDreamLoadStatus = document.querySelector('#gardenPrivateDreamLoadStatus');
 const privateDreamForm = document.querySelector('#gardenPrivateDreamForm');
 const gardenResetButton = document.querySelector('#gardenReset');
 const privateDreamInput = document.querySelector('#gardenPrivateDream');
@@ -109,6 +110,7 @@ const selectedGuardianName = document.querySelector('#gardenSelectedGuardianName
 const selectedGuardianTitle = document.querySelector('#gardenSelectedGuardianTitle');
 const selectedGuardianDescription = document.querySelector('#gardenSelectedGuardianDescription');
 const selectedGuardianWishCount = document.querySelector('#gardenSelectedGuardianWishCount');
+const selectedGuardianPrivateWishes = document.querySelector('#gardenSelectedGuardianPrivateWishes');
 const syncStatus = document.querySelector('#gardenSyncStatus');
 const guestbookForm = document.querySelector('#gardenGuestbookForm');
 const guestbookName = document.querySelector('#gardenGuestbookName');
@@ -128,7 +130,8 @@ const dreamWish = document.querySelector('#gardenDreamWish');
 const dreamStory = document.querySelector('#gardenDreamStory');
 const dreamInvention = document.querySelector('#gardenDreamInvention');
 const discoveredCreatures = new Set();
-const fulfilledDreams = new Set();
+const legacyFulfilledCreatureIds = new Set();
+let fulfilledWishes = [];
 let dreamJournal = [];
 const confirmedWishIds = new Set();
 const pendingWishRemovalIds = new Set();
@@ -179,6 +182,7 @@ let gardenSyncTimer = null;
 let gardenSyncChain = Promise.resolve();
 let gardenChangeVersion = 0;
 let gardenSyncRetryTimer = null;
+let fulfillmentPending = false;
 
 function setSyncStatus(message, state = '') {
   syncStatus.textContent = message;
@@ -218,8 +222,9 @@ function gardenStateSnapshot() {
     plots: plots.map((plot) => plot ? { seed: plot.seed, stage: plot.stage } : null),
     creatures: [...discoveredCreatures],
     plotOwners: [...plotDreamOwners],
-    fulfilled: [...fulfilledDreams],
+    fulfilled: [...legacyFulfilledCreatureIds],
     dreamJournal: dreamJournal.slice(-20),
+    fulfilledWishes: fulfilledWishes.map((entry) => ({ ...entry })),
     creatureLayout: Object.fromEntries(
       Object.entries(gardenCreatureLayout).map(([id, position]) => [id, { ...position }]),
     ),
@@ -229,7 +234,8 @@ function gardenStateSnapshot() {
 function normalizeGardenState(state) {
   if (!state || state.version !== 1 || !Array.isArray(state.plots) || state.plots.length !== 5
     || !Array.isArray(state.creatures) || !Array.isArray(state.plotOwners) || state.plotOwners.length !== 5
-    || !Array.isArray(state.fulfilled)) return null;
+    || !Array.isArray(state.fulfilled)
+    || (state.fulfilledWishes !== undefined && !Array.isArray(state.fulfilledWishes))) return null;
   const validCreatures = validCreatureIds;
   const validSeeds = new Set(Object.keys(seeds));
   if (state.creatures.some((id) => !validCreatures.has(id))
@@ -242,26 +248,38 @@ function normalizeGardenState(state) {
   const nextOwners = state.plotOwners.map((owner, index) => (
     nextPlots[index] && validCreatures.has(owner) ? owner : null
   ));
-  const validFulfilled = state.fulfilled.filter((id) => nextPlots.some((plot, index) => (
-    plot
-    && plot.stage === 2
-    && plot.seed === creatureInfo(id).dreamSeed
-    && nextOwners[index] === id
-  )));
   const journal = Array.isArray(state.dreamJournal) ? state.dreamJournal : [];
   if (journal.length > 20 || journal.some((entry) => (
     !entry || typeof entry.id !== 'string' || typeof entry.wish !== 'string'
     || !entry.wish.trim() || entry.wish.length > 250 || !validCreatures.has(entry.creature)
     || typeof entry.createdAt !== 'string' || Number.isNaN(Date.parse(entry.createdAt))
   ))) return null;
+  const fulfilledArchive = state.fulfilledWishes === undefined ? [] : state.fulfilledWishes;
+  if (fulfilledArchive.length > 20 || fulfilledArchive.some((entry) => (
+    !entry || typeof entry.id !== 'string' || !entry.id || entry.id.length > 64
+    || typeof entry.wish !== 'string' || !entry.wish.trim() || entry.wish.length > 250
+    || !validCreatures.has(entry.creature)
+    || typeof entry.createdAt !== 'string' || Number.isNaN(Date.parse(entry.createdAt))
+    || typeof entry.fulfilledAt !== 'string' || Number.isNaN(Date.parse(entry.fulfilledAt))
+  ))) return null;
+  const fulfilledIds = fulfilledArchive.map((entry) => entry.id);
+  if (new Set(fulfilledIds).size !== fulfilledIds.length
+    || fulfilledIds.some((id) => journal.some((entry) => entry.id === id))) return null;
   const normalized = {
     version: 1,
     plots: nextPlots,
     creatures: [...new Set(state.creatures)],
     plotOwners: nextOwners,
-    fulfilled: [...new Set(validFulfilled)],
+    fulfilled: [...new Set(state.fulfilled)],
     dreamJournal: journal.slice(-20).map((entry) => ({
       id: entry.id, wish: entry.wish.trim(), creature: entry.creature, createdAt: entry.createdAt,
+    })),
+    fulfilledWishes: fulfilledArchive.slice(-20).map((entry) => ({
+      id: entry.id,
+      wish: entry.wish.trim(),
+      creature: entry.creature,
+      createdAt: entry.createdAt,
+      fulfilledAt: entry.fulfilledAt,
     })),
   };
   normalized.creatureLayout = normalizeCreatureLayout(state.creatureLayout);
@@ -281,8 +299,10 @@ function mergeGardenStates(serverState, localState) {
   const local = normalizeGardenState(localState);
   if (!local) return { state: merged, overflow: false };
   merged.creatures = [...new Set([...merged.creatures, ...local.creatures])];
+  const fulfilledIds = new Set(merged.fulfilledWishes.map((entry) => entry.id));
   const serverEntries = (merged.dreamJournal || []).filter((entry) => (
     !pendingWishRemovalIds.has(entry.id)
+    && !fulfilledIds.has(entry.id)
   ));
   const serverIds = new Set(serverEntries.map((entry) => entry.id));
   const unconfirmedLocalEntries = (local.dreamJournal || []).filter((entry) => (
@@ -317,14 +337,7 @@ function mergeGardenStates(serverState, localState) {
     merged.plotOwners[destination] = localOwner;
   });
 
-  merged.fulfilled = [...new Set([...merged.fulfilled, ...local.fulfilled])].filter((id) => (
-    merged.plots.some((plot, index) => (
-      plot
-      && plot.stage === 2
-      && plot.seed === creatureInfo(id).dreamSeed
-      && merged.plotOwners[index] === id
-    ))
-  ));
+  merged.fulfilled = [...new Set([...merged.fulfilled, ...local.fulfilled])];
   return { state: merged, overflow };
 }
 
@@ -333,8 +346,9 @@ function storeGardenStateLocally(state) {
   discoveredCreatures.clear();
   state.creatures.forEach((id) => discoveredCreatures.add(id));
   plotDreamOwners = [...state.plotOwners];
-  fulfilledDreams.clear();
-  state.fulfilled.forEach((id) => fulfilledDreams.add(id));
+  legacyFulfilledCreatureIds.clear();
+  state.fulfilled.forEach((id) => legacyFulfilledCreatureIds.add(id));
+  fulfilledWishes = state.fulfilledWishes.map((entry) => ({ ...entry }));
   dreamJournal = [...(state.dreamJournal || [])];
   gardenCreatureLayout = { ...(state.creatureLayout || {}) };
 
@@ -349,7 +363,8 @@ function storeGardenStateLocally(state) {
     window.localStorage.setItem(gardenDreamStorageKey, JSON.stringify({
       version: 1,
       plotOwners: plotDreamOwners,
-      fulfilled: [...fulfilledDreams],
+      fulfilled: [...legacyFulfilledCreatureIds],
+      fulfilledWishes,
       dreamJournal,
       confirmedWishIds: [...confirmedWishIds].filter((id) => dreamJournal.some((entry) => entry.id === id)),
       pendingWishRemovalIds: [...pendingWishRemovalIds],
@@ -390,7 +405,8 @@ function persistWishSyncMetadata() {
       ...saved,
       version: 1,
       plotOwners: plotDreamOwners,
-      fulfilled: [...fulfilledDreams],
+      fulfilled: [...legacyFulfilledCreatureIds],
+      fulfilledWishes,
       dreamJournal,
       confirmedWishIds: [...confirmedWishIds].filter((id) => dreamJournal.some((entry) => entry.id === id)),
       pendingWishRemovalIds: [...pendingWishRemovalIds],
@@ -409,13 +425,14 @@ async function gardenApiRequest(path, options = {}) {
   }
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), 8000);
+  const publicRequest = path.startsWith('/api/guestbook') || path === '/api/garden/wish-counts';
   try {
     return await fetch(`${gardenApiBase}${path}`, {
       ...options,
       signal: controller.signal,
       headers: { ...(options.body ? { 'Content-Type': 'application/json' } : {}), ...options.headers },
       mode: 'cors',
-      credentials: 'include',
+      credentials: publicRequest ? 'omit' : 'include',
     });
   } finally {
     window.clearTimeout(timeout);
@@ -434,6 +451,41 @@ async function readGardenApiJson(response, serviceName) {
   } catch {
     throw new Error(`${serviceName} returned an invalid JSON response (HTTP ${response.status}).`);
   }
+}
+
+async function fetchPrivateGardenState(request = gardenApiRequest) {
+  const sessionResponse = await request('/api/garden/session');
+  if (!sessionResponse.ok) {
+    const result = await readGardenApiJson(sessionResponse, 'Private Garden session');
+    throw new Error(result?.error || `The private Garden session could not be started (HTTP ${sessionResponse.status}).`);
+  }
+  const response = await request('/api/garden/state');
+  const result = await readGardenApiJson(response, 'Private Garden API');
+  if (!response.ok) {
+    throw new Error(result?.error || `Private Garden state could not be loaded (HTTP ${response.status}).`);
+  }
+  return result;
+}
+
+async function requestWishFulfillment(wishId, revision, request = gardenApiRequest) {
+  const response = await request(
+    `/api/garden/wishes/${encodeURIComponent(wishId)}/fulfill`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ revision }),
+    },
+  );
+  const result = await readGardenApiJson(response, 'Private Garden API');
+  if (!response.ok) {
+    throw new Error(result?.error || `This wish could not be marked fulfilled (HTTP ${response.status}).`);
+  }
+  return result;
+}
+
+function privateGardenLoadMessage(error) {
+  return error instanceof TypeError
+    ? 'Could not connect to this visitor’s private Garden session. Any wishes shown below are only from this browser’s saved copy and have not been confirmed with the server.'
+    : `Private wishes could not be loaded for this visitor: ${error.message || 'Garden session unavailable.'}`;
 }
 
 function scheduleGardenSync(delay = 500) {
@@ -501,7 +553,8 @@ async function syncGardenState() {
             window.localStorage.setItem(gardenDreamStorageKey, JSON.stringify({
               version: 1,
               plotOwners: plotDreamOwners,
-              fulfilled: [...fulfilledDreams],
+              fulfilled: [...legacyFulfilledCreatureIds],
+              fulfilledWishes,
               resetRequested: false,
             }));
           } catch (error) {
@@ -539,16 +592,16 @@ async function syncGardenState() {
 async function initializeGardenSync() {
   if (gardenSyncReady) return;
   setSyncStatus('Loading your saved garden…', 'loading');
+  privateDreamLoadStatus.textContent = 'Loading private wishes for this visitor…';
+  privateDreamLoadStatus.dataset.state = 'loading';
   try {
-    const sessionResponse = await gardenApiRequest('/api/garden/session');
-    if (!sessionResponse.ok) throw new Error('The private Garden session could not be started.');
-    const response = await gardenApiRequest('/api/garden/state');
-    if (!response.ok) throw new Error('Garden load request failed.');
-    const result = await readGardenApiJson(response, 'Garden API');
-    gardenSessionReady = true;
+    const result = await fetchPrivateGardenState();
     if (result.state && !normalizeGardenState(result.state)) {
       throw new Error('The server returned an invalid Garden state.');
     }
+    gardenSessionReady = true;
+    privateDreamLoadStatus.textContent = '';
+    privateDreamLoadStatus.dataset.state = '';
     const localState = gardenStateSnapshot();
     gardenRevision = result.revision;
     if (result.state) markWishIdsConfirmed(result.state);
@@ -583,6 +636,8 @@ async function initializeGardenSync() {
     }
   } catch (error) {
     setSyncStatus('Offline — your local garden is kept and will retry.', 'offline');
+    privateDreamLoadStatus.textContent = privateGardenLoadMessage(error);
+    privateDreamLoadStatus.dataset.state = 'error';
     console.error('Could not load the saved Dream Garden:', error);
     scheduleGardenSyncRetry();
   }
@@ -625,17 +680,15 @@ function renderGuestbookEntries(entries) {
 
 async function loadGuestbookEntries() {
   guestbookStatus.textContent = 'Loading approved dreams…';
+  guestbookStatus.dataset.state = 'loading';
   try {
-    const response = await gardenApiRequest('/api/guestbook?limit=20');
-    const result = await readGardenApiJson(response, 'Guestbook API');
-    if (!response.ok) throw new Error(result?.error || `The guestbook could not be loaded (HTTP ${response.status}).`);
-    if (!Array.isArray(result.entries)) throw new Error('The guestbook returned an invalid response.');
-    renderGuestbookEntries(Array.isArray(result.entries) ? result.entries : []);
+    const entries = await fetchApprovedGuestbook();
+    renderGuestbookEntries(entries);
     guestbookStatus.textContent = '';
+    guestbookStatus.dataset.state = '';
   } catch (error) {
-    guestbookStatus.textContent = error.name === 'TypeError' || error.name === 'AbortError'
-      ? 'Could not reach the guestbook service. Please check back later.'
-      : error.message || 'The guestbook is unavailable right now. Please try again later.';
+    guestbookStatus.textContent = guestbookConnectionMessage(error, 'load');
+    guestbookStatus.dataset.state = 'error';
     const failure = document.createElement('li');
     failure.className = 'garden-guestbook__empty';
     failure.textContent = guestbookStatus.textContent;
@@ -649,29 +702,66 @@ guestbookForm.addEventListener('submit', async (event) => {
   if (!guestbookForm.reportValidity()) return;
   guestbookSubmit.disabled = true;
   guestbookStatus.textContent = 'Sending your dream…';
+  guestbookStatus.dataset.state = 'loading';
   try {
-    const response = await gardenApiRequest('/api/guestbook', {
-      method: 'POST',
-      body: JSON.stringify({
-        display_name: guestbookName.value.trim() || null,
-        dream_message: guestbookMessage.value.trim(),
-      }),
+    await submitGuestbookEntry({
+      display_name: guestbookName.value,
+      dream_message: guestbookMessage.value,
     });
-    const result = await readGardenApiJson(response, 'Guestbook API');
-    if (!response.ok) throw new Error(result?.error || `Your dream could not be sent (HTTP ${response.status}).`);
-    if (result?.entry?.status !== 'pending') {
-      throw new Error('The guestbook did not confirm that your message was saved. Please try again later.');
-    }
     guestbookForm.reset();
     guestbookStatus.textContent = 'Your dream was received as a pending note. Review controls are not included on this page.';
+    guestbookStatus.dataset.state = 'success';
   } catch (error) {
-    guestbookStatus.textContent = error instanceof TypeError || error.name === 'AbortError'
-      ? 'The guestbook service could not confirm your message. Please try again later.'
-      : error.message || 'Your dream could not be sent. Please try again.';
+    guestbookStatus.textContent = guestbookConnectionMessage(error, 'submit');
+    guestbookStatus.dataset.state = 'error';
   } finally {
     guestbookSubmit.disabled = false;
   }
 });
+
+async function fetchApprovedGuestbook(request = gardenApiRequest) {
+  const response = await request('/api/guestbook?limit=20');
+  const result = await readGardenApiJson(response, 'Guestbook API');
+  if (!response.ok) {
+    throw new Error(result?.error || `The guestbook could not be loaded (HTTP ${response.status}).`);
+  }
+  if (!Array.isArray(result.entries)) throw new Error('The guestbook returned an invalid response.');
+  return result.entries;
+}
+
+async function submitGuestbookEntry(entry, request = gardenApiRequest) {
+  const response = await request('/api/guestbook', {
+    method: 'POST',
+    body: JSON.stringify({
+      display_name: entry.display_name?.trim() || null,
+      dream_message: entry.dream_message.trim(),
+    }),
+  });
+  const result = await readGardenApiJson(response, 'Guestbook API');
+  if (!response.ok) {
+    throw new Error(result?.error || `Your dream could not be sent (HTTP ${response.status}).`);
+  }
+  if (result?.entry?.status !== 'pending') {
+    throw new Error('The guestbook did not confirm that your message was saved. Please try again later.');
+  }
+  return result;
+}
+
+function guestbookConnectionMessage(error, action) {
+  if (error?.name === 'AbortError') {
+    return action === 'load'
+      ? 'Loading approved dreams timed out. Please try again.'
+      : 'Sending timed out before the guestbook confirmed your note. Please check back before retrying.';
+  }
+  if (error instanceof TypeError) {
+    return 'Could not connect to the guestbook API. Check your connection and the site’s cross-origin API configuration.';
+  }
+  return error?.message || (
+    action === 'load'
+      ? 'Approved dreams could not be loaded right now.'
+      : 'Your dream could not be sent. Please try again.'
+  );
+}
 
 function readSavedGarden() {
   let raw;
@@ -725,7 +815,9 @@ function readSavedDreams() {
   try {
     const saved = JSON.parse(raw);
     if (!saved || saved.version !== 1 || !Array.isArray(saved.plotOwners) || !Array.isArray(saved.fulfilled)
-      || (saved.dreamJournal !== undefined && (!Array.isArray(saved.dreamJournal) || saved.dreamJournal.length > 20))) {
+      || (saved.dreamJournal !== undefined && (!Array.isArray(saved.dreamJournal) || saved.dreamJournal.length > 20))
+      || (saved.fulfilledWishes !== undefined
+        && (!Array.isArray(saved.fulfilledWishes) || saved.fulfilledWishes.length > 20))) {
       throw new Error('Saved dream data has an unexpected shape.');
     }
     dreamJournal = (saved.dreamJournal || []).filter((entry) => entry && typeof entry.id === 'string'
@@ -759,17 +851,18 @@ function readSavedDreams() {
       return plots[index] && validCreatureIds.has(owner) ? owner : null;
     });
     saved.fulfilled.forEach((id) => {
-      const hasMatchingBloom = plots.some((plot, index) => (
-        plot
-        && plot.stage === 2
-        && plot.seed === creatureInfo(id)?.dreamSeed
-        && plotDreamOwners[index] === id
-      ));
-      if (validCreatureIds.has(id) && hasMatchingBloom) fulfilledDreams.add(id);
+      if (validCreatureIds.has(id)) legacyFulfilledCreatureIds.add(id);
     });
+    fulfilledWishes = (saved.fulfilledWishes || []).filter((entry) => entry
+      && typeof entry.id === 'string' && entry.id && entry.id.length <= 64
+      && typeof entry.wish === 'string' && entry.wish.trim() && entry.wish.length <= 250
+      && validCreatureIds.has(entry.creature)
+      && typeof entry.createdAt === 'string' && !Number.isNaN(Date.parse(entry.createdAt))
+      && typeof entry.fulfilledAt === 'string' && !Number.isNaN(Date.parse(entry.fulfilledAt)));
   } catch (error) {
     plotDreamOwners = Array(5).fill(null);
-    fulfilledDreams.clear();
+    legacyFulfilledCreatureIds.clear();
+    fulfilledWishes = [];
     localDreamDataInvalid = true;
     feedback.textContent = 'Dream-fulfilment notes could not be read. Their saved copy is preserved while no dreams are marked complete.';
     console.error('Saved Dream Garden fulfilment data was invalid and has been ignored:', error);
@@ -785,7 +878,8 @@ function saveDreams() {
     window.localStorage.setItem(gardenDreamStorageKey, JSON.stringify({
       version: 1,
       plotOwners: plotDreamOwners,
-      fulfilled: [...fulfilledDreams],
+      fulfilled: [...legacyFulfilledCreatureIds],
+      fulfilledWishes,
       dreamJournal,
       confirmedWishIds: [...confirmedWishIds].filter((id) => dreamJournal.some((entry) => entry.id === id)),
       pendingWishRemovalIds: [...pendingWishRemovalIds],
@@ -1098,14 +1192,6 @@ function renderPlots() {
     const seed = seeds[plot.seed];
     card.style.setProperty('--flower-color', seed.color);
     card.classList.add(`is-stage-${plot.stage}`);
-    const dreamOwner = plotDreamOwners[index];
-    const dreamFulfilled = dreamOwner
-      && seed.id === creatureInfo(dreamOwner).dreamSeed
-      && fulfilledDreams.has(dreamOwner);
-    if (dreamFulfilled) {
-      card.classList.add('garden-plot--dream-fulfilled');
-      card.setAttribute('aria-label', `Garden plot ${index + 1}, ${seed.name}, dream fulfilled for ${creatureInfo(dreamOwner).name}`);
-    }
     card.append(createGardenPlant(seed.id));
 
     const name = document.createElement('span');
@@ -1124,25 +1210,15 @@ function renderPlots() {
       water.className = 'garden-water';
       water.type = 'button';
       water.textContent = 'Water';
+      water.disabled = fulfillmentPending;
       water.setAttribute('aria-label', `Water ${seed.name}; currently ${stageText.toLowerCase()}`);
       water.addEventListener('click', () => {
         plots[index].stage += 1;
-        const owner = plotDreamOwners[index];
-        const fulfillsDream = plots[index].stage === 2
-          && owner
-          && seed.id === creatureInfo(owner).dreamSeed
-          && !fulfilledDreams.has(owner);
         window.DearPipSounds?.play(plots[index].stage === 2 ? 'garden-harvest' : 'garden-water');
-        if (fulfillsDream) {
-          fulfilledDreams.add(owner);
-          feedback.textContent = `${creatureInfo(owner).name}'s dream came true! Pip's ${seed.name} helped make the garden kinder.`;
-        } else {
-          feedback.textContent = plots[index].stage === 2
-            ? `${seed.name} opened into a little dream flower.`
-            : `${seed.name} has grown a tiny sprout.`;
-        }
+        feedback.textContent = plots[index].stage === 2
+          ? `${seed.name} opened into a little dream flower.`
+          : `${seed.name} has grown a tiny sprout.`;
         saveGarden();
-        saveDreams();
         render();
       });
       card.append(water);
@@ -1167,9 +1243,35 @@ function renderJournal(root, entries, emptyMessage) {
   });
 }
 
+function renderFulfilledDreams() {
+  fulfilledDreamJournal.replaceChildren();
+  if (!fulfilledWishes.length) {
+    const empty = document.createElement('li');
+    empty.className = 'garden-journal-empty';
+    empty.textContent = 'No dreams fulfilled yet.';
+    fulfilledDreamJournal.append(empty);
+    return;
+  }
+  fulfilledWishes.slice().reverse().forEach((entry) => {
+    const item = document.createElement('li');
+    const wish = document.createElement('p');
+    wish.textContent = entry.wish;
+    const status = document.createElement('small');
+    status.textContent = `Fulfilled with ${creatureInfo(entry.creature).name}`;
+    const date = document.createElement('time');
+    const parsedDate = new Date(entry.fulfilledAt);
+    if (!Number.isNaN(parsedDate.getTime())) {
+      date.dateTime = parsedDate.toISOString();
+      date.textContent = parsedDate.toLocaleDateString();
+    }
+    item.append(wish, status, date);
+    fulfilledDreamJournal.append(item);
+  });
+}
+
 function render() {
   applyGardenCreatureLayout();
-  gardenResetButton.disabled = !gardenSyncReady || !gardenSessionReady || gardenSyncPending;
+  gardenResetButton.disabled = !gardenSyncReady || !gardenSessionReady || gardenSyncPending || fulfillmentPending;
   renderPlots();
   const planted = plots.filter(Boolean);
   flowerCount.textContent = String(planted.length);
@@ -1177,10 +1279,10 @@ function render() {
   creatureCount.textContent = String(wishFriends.length);
   renderJournal(flowerJournal, planted.map((plot) => `${seeds[plot.seed].name} · ${['seed', 'sprout', 'bloom'][plot.stage]}`), 'No flowers planted yet.');
   renderJournal(creatureJournal, wishFriends.map((id) => creatureInfo(id).name), 'Your wish friends will appear here after you save a wish with them.');
-  renderJournal(fulfilledDreamJournal, [...fulfilledDreams].map((id) => `${creatureInfo(id).name} · dream fulfilled`), 'No dreams fulfilled yet.');
+  renderFulfilledDreams();
   renderPrivateDreams();
   renderWishStars();
-  plantButton.disabled = !selectedSeed || !plots.includes(null);
+  plantButton.disabled = !selectedSeed || !plots.includes(null) || fulfillmentPending;
   plantButton.textContent = !plots.includes(null)
     ? 'Every plot is planted'
     : selectedSeed
@@ -1197,14 +1299,22 @@ function hashWishId(id) {
   return hash >>> 0;
 }
 
-function renderWishStars() {
-  const activeEntries = new Map(dreamJournal
-    .filter((entry) => confirmedWishIds.has(entry.id))
+function eligibleWishEntries(entries, confirmedIds, pendingEntries) {
+  const eligible = new Map(entries
+    .filter((entry) => confirmedIds.has(entry.id))
     .map((entry) => [entry.id, entry]));
-  pendingWishRemovalEntries.forEach((entry, id) => {
-    if (confirmedWishIds.has(id)) activeEntries.set(id, entry);
+  pendingEntries.forEach((entry, id) => {
+    if (confirmedIds.has(id)) eligible.set(id, entry);
   });
-  const confirmedEntries = [...activeEntries.values()];
+  return [...eligible.values()];
+}
+
+function renderWishStars() {
+  const confirmedEntries = eligibleWishEntries(
+    dreamJournal,
+    confirmedWishIds,
+    pendingWishRemovalEntries,
+  );
   const activeIds = new Set(confirmedEntries.map((entry) => entry.id));
   const existingStars = new Map([...wishStarRoot.children].map((star) => [star.dataset.wishId, star]));
 
@@ -1262,6 +1372,7 @@ function renderWishStars() {
     if (!star.isConnected) wishStarRoot.append(star);
   });
   wishStarCount.textContent = `${confirmedEntries.length} wish ${confirmedEntries.length === 1 ? 'star' : 'stars'}`;
+  wishStarRoot.hidden = confirmedEntries.length === 0;
 }
 
 function openWishDetails(id, trigger) {
@@ -1356,6 +1467,7 @@ function updateSelectedGuardian() {
     selectedGuardianImage.removeAttribute('src');
     selectedGuardianImage.alt = '';
   }
+  renderSelectedGuardianPrivateWishes(privateDreamCreature.value);
 }
 
 function guardianWishCountMessage(id) {
@@ -1395,12 +1507,45 @@ async function loadGuardianWishCounts() {
   if (selectedCreatureId) updateDreamPanelWishCount(selectedCreatureId);
 }
 
-privateDreamCreature.addEventListener('change', updateSelectedGuardian);
+privateDreamCreature.addEventListener('change', () => {
+  updateSelectedGuardian();
+  renderPrivateDreams();
+});
 updateSelectedGuardian();
+
+function renderSelectedGuardianPrivateWishes(creatureId) {
+  if (!selectedGuardianPrivateWishes) return;
+  selectedGuardianPrivateWishes.replaceChildren();
+  const active = wishesForGuardian(dreamJournal, creatureId);
+  const fulfilled = wishesForGuardian(fulfilledWishes, creatureId);
+  if (!active.length && !fulfilled.length) {
+    const empty = document.createElement('li');
+    empty.className = 'garden-journal-empty';
+    empty.textContent = 'No private wishes with this friend yet.';
+    selectedGuardianPrivateWishes.append(empty);
+    return;
+  }
+  active.forEach((entry) => {
+    const item = document.createElement('li');
+    item.textContent = entry.wish;
+    selectedGuardianPrivateWishes.append(item);
+  });
+  fulfilled.forEach((entry) => {
+    const item = document.createElement('li');
+    item.className = 'is-fulfilled';
+    item.textContent = `${entry.wish} · fulfilled`;
+    selectedGuardianPrivateWishes.append(item);
+  });
+}
+
+function wishesForGuardian(entries, creatureId) {
+  return entries.filter((entry) => entry.creature === creatureId);
+}
 
 function renderPrivateDreams() {
   if (!privateDreamJournal) return;
   privateDreamJournal.replaceChildren();
+  renderSelectedGuardianPrivateWishes(privateDreamCreature.value);
   if (!dreamJournal.length) {
     const empty = document.createElement('li');
     empty.className = 'garden-journal-empty';
@@ -1413,11 +1558,8 @@ function renderPrivateDreams() {
     const wish = document.createElement('p');
     wish.textContent = entry.wish;
     const status = document.createElement('small');
-    const planted = plots.some((plot, index) => plot && plotDreamOwners[index] === entry.creature);
     const creature = creatureInfo(entry.creature);
-    status.textContent = fulfilledDreams.has(entry.creature) ? `${creature.name} · garden bloom fulfilled`
-      : planted ? `${creature.name} · collected, growing in the garden`
-        : `${creature.name} · awaiting collection`;
+    status.textContent = `${creature.name} · active wish`;
     const date = document.createElement('time');
     const parsedDate = new Date(entry.createdAt);
     if (!Number.isNaN(parsedDate.getTime())) {
@@ -1429,15 +1571,69 @@ function renderPrivateDreams() {
     remove.type = 'button';
     remove.textContent = 'Remove wish';
     remove.setAttribute('aria-label', `Remove your wish for ${creature.name}`);
-    remove.disabled = !gardenSyncReady || gardenSyncPending;
+    remove.disabled = !gardenSyncReady || gardenSyncPending || fulfillmentPending;
     remove.addEventListener('click', () => removePrivateWish(entry.id));
-    item.append(wish, status, date, remove);
+    const fulfill = document.createElement('button');
+    fulfill.className = 'garden-private-wish-fulfill';
+    fulfill.type = 'button';
+    fulfill.textContent = 'Mark as fulfilled';
+    fulfill.setAttribute('aria-label', `Mark this wish with ${creature.name} as fulfilled`);
+    fulfill.disabled = !gardenSyncReady || !gardenSessionReady || gardenSyncPending || fulfillmentPending;
+    fulfill.addEventListener('click', () => fulfillPrivateWish(entry.id));
+    item.append(wish, status, date, fulfill, remove);
     privateDreamJournal.append(item);
   });
 }
 
+async function fulfillPrivateWish(id) {
+  if (!gardenSyncReady || !gardenSessionReady || gardenSyncPending || fulfillmentPending) return;
+  const entry = dreamJournal.find((wish) => wish.id === id);
+  if (!entry) return;
+  const creature = creatureInfo(entry.creature);
+  if (!window.confirm(`Mark this specific wish with ${creature.name} as fulfilled?\n\n“${entry.wish}”`)) return;
+
+  fulfillmentPending = true;
+  privateDreamStatus.textContent = 'Saving this fulfilled wish…';
+  render();
+  const startingVersion = gardenChangeVersion;
+  try {
+    const result = await requestWishFulfillment(id, gardenRevision);
+    const serverState = normalizeGardenState(result.state);
+    if (!serverState || !Number.isSafeInteger(result.revision)) {
+      throw new Error('The server returned an invalid fulfilled-wish record.');
+    }
+    const localState = gardenStateSnapshot();
+    localState.dreamJournal = localState.dreamJournal.filter((wish) => wish.id !== id);
+    const merged = pendingReset
+      ? { state: localState, overflow: false }
+      : mergeGardenStates(serverState, localState);
+    const localChangesOccurred = gardenChangeVersion !== startingVersion;
+    gardenRevision = result.revision;
+    confirmedWishIds.delete(id);
+    storeGardenStateLocally(merged.state);
+    gardenChangeVersion += 1;
+    gardenSyncPending = localChangesOccurred;
+    if (localChangesOccurred) scheduleGardenSync(0);
+    else {
+      gardenPersistedVersion = gardenChangeVersion;
+      setGardenSavedStatus();
+    }
+    persistWishSyncMetadata();
+    render();
+    privateDreamStatus.textContent = 'This wish was marked fulfilled and saved in your private journal.';
+  } catch (error) {
+    privateDreamStatus.textContent = error instanceof TypeError
+      ? 'Could not reach the private Garden service. This wish was not confirmed as fulfilled.'
+      : error.message || 'This wish could not be marked fulfilled. Please try again.';
+  } finally {
+    fulfillmentPending = false;
+    render();
+  }
+}
+
 async function removePrivateWish(id) {
-  if (!gardenSyncReady || !gardenSessionReady || gardenSyncPending || pendingWishRemovalIds.has(id)) return;
+  if (!gardenSyncReady || !gardenSessionReady || gardenSyncPending || fulfillmentPending
+    || pendingWishRemovalIds.has(id)) return;
   const entry = dreamJournal.find((wish) => wish.id === id);
   if (!entry || !window.confirm(`Remove this private wish for ${creatureInfo(entry.creature).name} and its saved star?`)) return;
 
@@ -1563,7 +1759,7 @@ Object.entries(seeds).forEach(([id, seed]) => {
 });
 
 plantButton.addEventListener('click', () => {
-  if (!selectedSeed) return;
+  if (!selectedSeed || fulfillmentPending) return;
   const openPlot = plots.indexOf(null);
   if (openPlot < 0) return;
   plots[openPlot] = { seed: selectedSeed, stage: 0 };
@@ -1582,6 +1778,8 @@ document.querySelectorAll('.garden-creature').forEach((button) => {
     const creature = creatures[id];
     if (!creature) return;
     selectedCreatureId = id;
+    privateDreamCreature.value = id;
+    updateSelectedGuardian();
     const firstDiscovery = !discoveredCreatures.has(id);
     discoveredCreatures.add(id);
     document.querySelectorAll('.garden-creature').forEach((item) => {
@@ -1619,16 +1817,17 @@ document.querySelectorAll('.garden-creature').forEach((button) => {
 });
 
 gardenResetButton.addEventListener('click', async () => {
-  if (!gardenSyncReady || !gardenSessionReady || gardenSyncPending) {
+  if (!gardenSyncReady || !gardenSessionReady || gardenSyncPending || fulfillmentPending) {
     privateDreamStatus.textContent = 'Wait until your garden is connected and saved before resetting it.';
     return;
   }
-  if (!window.confirm('Start a fresh garden? This will clear planted seeds, discovered friends, and all private wishes.')) return;
+  if (!window.confirm('Start a fresh garden? This will clear planted seeds, discovered friends, and all active and fulfilled private wishes.')) return;
   const previous = {
     plots: plots.map((plot) => plot ? { ...plot } : null),
     plotOwners: [...plotDreamOwners],
     creatures: [...discoveredCreatures],
-    fulfilled: [...fulfilledDreams],
+    fulfilled: [...legacyFulfilledCreatureIds],
+    fulfilledWishes,
     journal: [...dreamJournal],
     layout: Object.fromEntries(Object.entries(gardenCreatureLayout).map(([id, position]) => [id, { ...position }])),
     confirmedWishIds: [...confirmedWishIds],
@@ -1655,7 +1854,8 @@ gardenResetButton.addEventListener('click', async () => {
   plots = Array(5).fill(null);
   plotDreamOwners = Array(5).fill(null);
   discoveredCreatures.clear();
-  fulfilledDreams.clear();
+  legacyFulfilledCreatureIds.clear();
+  fulfilledWishes = [];
   dreamJournal = [];
   gardenCreatureLayout = {};
   selectedSeed = null;
@@ -1693,8 +1893,9 @@ gardenResetButton.addEventListener('click', async () => {
   plotDreamOwners = previous.plotOwners;
   discoveredCreatures.clear();
   previous.creatures.forEach((id) => discoveredCreatures.add(id));
-  fulfilledDreams.clear();
-  previous.fulfilled.forEach((id) => fulfilledDreams.add(id));
+  legacyFulfilledCreatureIds.clear();
+  previous.fulfilled.forEach((id) => legacyFulfilledCreatureIds.add(id));
+  fulfilledWishes = previous.fulfilledWishes;
   dreamJournal = previous.journal;
   gardenCreatureLayout = previous.layout;
   confirmedWishIds.clear();

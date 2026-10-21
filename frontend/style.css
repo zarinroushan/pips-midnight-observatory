@@ -5241,14 +5241,6 @@ html[data-mood="dawn"] .atlas-page :focus-visible {
   font: 8px/1.2 var(--mono);
 }
 
-.garden-plot--dream-fulfilled {
-  border-color: rgba(244, 207, 120, 0.78);
-  box-shadow:
-    inset 0 -10px 20px rgba(22, 28, 35, 0.34),
-    0 0 12px rgba(244, 207, 120, 0.24),
-    0 0 24px rgba(243, 189, 208, 0.12);
-}
-
 .garden-plant {
   position: relative;
   display: grid;
@@ -10065,5 +10057,217 @@ body.dreamworld-page[data-mood="dawn"] .dreamworld-pip-instruction__invitation {
   body.dreamworld-page .dreamworld-pip-card > .dreamworld-dialogue:not([hidden]) {
     grid-column: 1 / -1;
     grid-row: 2;
+  }
+}
+
+.garden-page {
+  --garden-readable-text: #f1e8da;
+  --garden-muted-text: #c7bbd4;
+  --garden-focus-ring: #ffe8a6;
+}
+
+.garden-wish-stars[hidden] {
+  display: none;
+}
+
+.garden-journal-explainer,
+.garden-private-load-status,
+.garden-selected-guardian__private > small {
+  margin: 4px 0 8px;
+  color: var(--garden-muted-text);
+  font: 11px/1.5 var(--serif);
+}
+
+.garden-private-load-status[data-state="error"],
+.garden-guestbook__status[data-state="error"] {
+  color: #ffd0da;
+}
+
+.garden-guestbook__status[data-state="success"] {
+  color: #b8e6c7;
+}
+
+.garden-private-wish-fulfill,
+.garden-private-dreams .garden-private-wish-remove {
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid rgba(244, 207, 120, .62);
+  border-radius: 999px;
+  font: 700 10px/1.35 var(--mono);
+  letter-spacing: .02em;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, transform 150ms ease;
+}
+
+.garden-private-wish-fulfill {
+  justify-self: start;
+  color: #28213a;
+  background: #f4cf78;
+}
+
+.garden-private-wish-fulfill:hover:not(:disabled),
+.garden-guestbook__submit:hover:not(:disabled) {
+  border-color: #ffe8a6;
+  background: #ffdf8d;
+  transform: translateY(-1px);
+}
+
+.garden-private-dreams .garden-private-wish-remove {
+  justify-self: start;
+  border-color: rgba(243, 189, 208, .62);
+  color: #ffe7ef;
+  background: rgba(108, 54, 77, .55);
+}
+
+.garden-private-dreams .garden-private-wish-remove:hover:not(:disabled) {
+  border-color: #ffd1df;
+  color: #fff;
+  background: rgba(132, 59, 89, .82);
+  transform: translateY(-1px);
+}
+
+.garden-private-wish-fulfill:disabled,
+.garden-private-dreams .garden-private-wish-remove:disabled,
+.garden-guestbook__submit:disabled {
+  opacity: .62;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.garden-private-wish-fulfill:disabled,
+.garden-private-dreams .garden-private-wish-remove:disabled {
+  border-color: rgba(199, 187, 212, .42);
+  color: #d7cfdf;
+  background: #514b60;
+  opacity: 1;
+}
+
+.garden-selected-guardian__private {
+  grid-column: 1 / -1;
+  min-width: 0;
+  padding-top: 8px;
+  border-top: 1px solid rgba(215, 193, 236, .18);
+}
+
+.garden-selected-guardian__private-list {
+  display: grid;
+  gap: 5px;
+  margin: 5px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.garden-selected-guardian__private-list li {
+  overflow-wrap: anywhere;
+  color: var(--garden-readable-text);
+  font: 12px/1.45 var(--serif);
+}
+
+.garden-selected-guardian__private-list li.is-fulfilled {
+  color: #f4cf78;
+}
+
+.garden-page :focus-visible {
+  outline: 3px solid var(--garden-focus-ring);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 2px rgba(19, 21, 43, .86);
+}
+
+html[data-mood="dawn"] body.garden-page {
+  --garden-readable-text: #3b3349;
+  --garden-muted-text: #5e526c;
+  --garden-focus-ring: #624b79;
+}
+
+html[data-mood="dawn"] .garden-page .garden-journal-explainer,
+html[data-mood="dawn"] .garden-page .garden-private-load-status,
+html[data-mood="dawn"] .garden-page .garden-selected-guardian__private > small,
+html[data-mood="dawn"] .garden-page .garden-journal-list li > small,
+html[data-mood="dawn"] .garden-page .garden-journal-list li > time,
+html[data-mood="dawn"] .garden-page .garden-journal-list .garden-journal-empty {
+  color: #5e526c;
+}
+
+html[data-mood="dawn"] .garden-page .garden-private-load-status[data-state="error"],
+html[data-mood="dawn"] .garden-page .garden-guestbook__status[data-state="error"] {
+  color: #8b3049;
+}
+
+html[data-mood="dawn"] .garden-page .garden-guestbook__status[data-state="success"] {
+  color: #28633f;
+}
+
+html[data-mood="dawn"] .garden-page .garden-selected-guardian__private {
+  border-top-color: rgba(110, 91, 128, .22);
+}
+
+html[data-mood="dawn"] .garden-page .garden-selected-guardian__private-list li {
+  color: #3b3349;
+}
+
+html[data-mood="dawn"] .garden-page .garden-selected-guardian__private-list li.is-fulfilled {
+  color: #76552f;
+}
+
+html[data-mood="dawn"] .garden-page .garden-private-dreams select,
+html[data-mood="dawn"] .garden-page .garden-private-dreams textarea,
+html[data-mood="dawn"] .garden-page .garden-guestbook__form input,
+html[data-mood="dawn"] .garden-page .garden-guestbook__form textarea {
+  border-color: rgba(92, 69, 111, .36);
+  color: #3b3349;
+  background: rgba(255, 255, 255, .92);
+  color-scheme: light;
+}
+
+html[data-mood="dawn"] .garden-page select option {
+  color: #3b3349;
+  background: #fffdf9;
+}
+
+html[data-mood="dawn"] .garden-page input::placeholder,
+html[data-mood="dawn"] .garden-page textarea::placeholder {
+  color: #6c6079;
+  opacity: 1;
+}
+
+html[data-mood="dawn"] .garden-page .garden-private-wish-fulfill {
+  border-color: #8a6422;
+  color: #342614;
+  background: #e6bd68;
+}
+
+html[data-mood="dawn"] .garden-page .garden-private-wish-fulfill:hover:not(:disabled) {
+  border-color: #76552f;
+  background: #f0cd7b;
+}
+
+html[data-mood="dawn"] .garden-page .garden-private-wish-remove {
+  border-color: #9b627b;
+  color: #683b52;
+  background: #fae7ef;
+}
+
+html[data-mood="dawn"] .garden-page .garden-private-wish-remove:hover:not(:disabled) {
+  border-color: #7a4560;
+  color: #512d42;
+  background: #f4d8e4;
+}
+
+html[data-mood="dawn"] .garden-page .garden-private-wish-fulfill:disabled,
+html[data-mood="dawn"] .garden-page .garden-private-wish-remove:disabled {
+  border-color: #b9afc4;
+  color: #62556f;
+  background: #eeeaf2;
+  opacity: 1;
+}
+
+html[data-mood="dawn"] .garden-page :focus-visible {
+  box-shadow: 0 0 0 2px rgba(251, 241, 230, .96);
+}
+
+@media (max-width: 620px) {
+  .garden-private-wish-fulfill,
+  .garden-private-dreams .garden-private-wish-remove {
+    min-height: 40px;
   }
 }

@@ -73,7 +73,7 @@ class PostgreSQLApiIntegrationTests(unittest.TestCase):
             self.database_patch.stop()
             backend_app.app.config["SECRET_KEY"] = self.previous_secret
 
-    def assert_state_survives_process_restart(self, cookie, expected_state):
+    def assert_state_survives_process_restart(self, cookie, expected_state, expected_revision=1):
         with socket.socket() as port_socket:
             port_socket.bind(("127.0.0.1", 0))
             port = port_socket.getsockname()[1]
@@ -125,7 +125,10 @@ class PostgreSQLApiIntegrationTests(unittest.TestCase):
         for _ in range(2):
             process = start_server()
             try:
-                self.assertEqual(get_state(), {"state": expected_state, "revision": 1})
+                self.assertEqual(
+                    get_state(),
+                    {"state": expected_state, "revision": expected_revision},
+                )
             finally:
                 process.terminate()
                 process.wait(timeout=5)
@@ -137,6 +140,12 @@ class PostgreSQLApiIntegrationTests(unittest.TestCase):
             "creatures": [],
             "plotOwners": [None] * 5,
             "fulfilled": [],
+            "dreamJournal": [{
+                "id": f"wish-{self.visitor_id}",
+                "wish": "Complete one small step toward my goal.",
+                "creature": "moth",
+                "createdAt": "2026-01-01T00:00:00Z",
+            }],
             "creatureLayout": {
                 "moth": {"x": 28.5, "y": 38, "scale": 1.15},
             },
@@ -159,9 +168,27 @@ class PostgreSQLApiIntegrationTests(unittest.TestCase):
             state,
         )
 
+        fulfilled = self.client.post(
+            f"/api/garden/wishes/wish-{self.visitor_id}/fulfill",
+            json={"revision": 1},
+            headers={"Origin": self.origin},
+        )
+        self.assertEqual(fulfilled.status_code, 200)
+        state = fulfilled.get_json()["state"]
+        self.assertEqual(state["dreamJournal"], [])
+        self.assertEqual(
+            state["fulfilledWishes"][0]["wish"],
+            "Complete one small step toward my goal.",
+        )
+        self.assert_state_survives_process_restart(
+            f"dearpip_garden={garden_cookie.value}",
+            state,
+            expected_revision=2,
+        )
+
         loaded = self.client.get(path)
         self.assertEqual(loaded.status_code, 200)
-        self.assertEqual(loaded.get_json(), {"state": state, "revision": 1})
+        self.assertEqual(loaded.get_json(), {"state": state, "revision": 2})
 
         progress_path = f"/api/progress/{self.visitor_id}/home"
         progress_data = {"version": 1, "collected": [0], "collectedButterflies": []}
