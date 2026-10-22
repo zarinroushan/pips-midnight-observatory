@@ -70,7 +70,13 @@ def _record_progress_journal_events(connection, visitor_id, feature, previous, c
         return
     if feature == "atlas":
         if current["puzzleComplete"] and not previous.get("puzzleComplete", False):
-            add_event("atlas:sleepy-fox", "atlas_puzzle")
+            add_event(
+                f"atlas:puzzle:{current.get('puzzleConstellation') or 'completed'}",
+                "atlas_puzzle",
+                reference_key=current.get("puzzleConstellation"),
+            )
+        if current.get("gameCompleted") and not previous.get("gameCompleted", False):
+            add_event("atlas:wishbound-adventure", "atlas_game_completed")
         return
     if feature == "bedtime":
         old_completed = set(previous.get("completed", []))
@@ -78,6 +84,13 @@ def _record_progress_journal_events(connection, visitor_id, feature, previous, c
         for story_id in set(current.get("completed", [])) - old_completed:
             if visited.intersection(STORY_ENDING_SCENES.get(story_id, set())):
                 add_event(f"bedtime:{story_id}", "story_complete", reference_key=story_id)
+        return
+    if feature == "lullaby":
+        if current.get("hiddenStarFound") and not previous.get("hiddenStarFound", False):
+            add_event("lullaby:hidden-star", "lullaby_hidden_star")
+        if current.get("hiddenButterflyFound") and not previous.get("hiddenButterflyFound", False):
+            add_event("lullaby:hidden-butterfly", "lullaby_hidden_butterfly")
+        return
 
 
 def _database_error(error):
@@ -108,13 +121,25 @@ def _validated_progress(feature, value):
         butterflies = _unique_values(value["collectedButterflies"], set(range(2)), 2)
         return {"version": 1, "collected": stars, "collectedButterflies": butterflies} if stars is not None and butterflies is not None else None
     if feature == "atlas":
-        if set(value) - {"version", "discovered", "puzzleComplete"} or "discovered" not in value:
+        allowed_keys = {"version", "discovered", "puzzleComplete", "gameCompleted"}
+        allowed_keys.add("puzzleConstellation")
+        if set(value) - allowed_keys or "discovered" not in value:
             return None
         discovered = _unique_values(value["discovered"], ATLAS_DISCOVERIES, 5)
         puzzle_complete = value.get("puzzleComplete", False)
-        if discovered is None or type(puzzle_complete) is not bool:
+        game_completed = value.get("gameCompleted", False)
+        puzzle_constellation = value.get("puzzleConstellation")
+        if puzzle_constellation is not None and puzzle_constellation not in ATLAS_DISCOVERIES:
             return None
-        return {"version": 1, "discovered": discovered, "puzzleComplete": puzzle_complete}
+        if discovered is None or type(puzzle_complete) is not bool or type(game_completed) is not bool:
+            return None
+        return {
+            "version": 1,
+            "discovered": discovered,
+            "puzzleComplete": puzzle_complete,
+            "gameCompleted": game_completed,
+            "puzzleConstellation": puzzle_constellation,
+        }
     if feature == "bedtime":
         if set(value) - {"version", "scene", "visited", "adventure", "completed"} or not {"scene", "visited"} <= set(value):
             return None
@@ -129,7 +154,12 @@ def _validated_progress(feature, value):
             return None
         return {"version": 1, "scene": scene, "visited": visited, "adventure": adventure, "completed": completed}
     if feature == "lullaby":
-        if set(value) != {"version", "bubbles", "deletedBubbles"} or not isinstance(value["bubbles"], list) or len(value["bubbles"]) > 20:
+        allowed_keys = {"version", "bubbles", "deletedBubbles", "hiddenStarFound", "hiddenButterflyFound"}
+        if not isinstance(value, dict) or set(value) - allowed_keys or not {"version", "bubbles", "deletedBubbles"} <= set(value):
+            return None
+        hidden_star = value.get("hiddenStarFound", False)
+        hidden_butterfly = value.get("hiddenButterflyFound", False)
+        if type(hidden_star) is not bool or type(hidden_butterfly) is not bool:
             return None
         deleted = value["deletedBubbles"]
         if not isinstance(deleted, list) or len(deleted) > 40:
@@ -138,7 +168,13 @@ def _validated_progress(feature, value):
             return None
         deleted = list(dict.fromkeys(item.strip() for item in deleted))
         bubbles = list(dict.fromkeys(item.strip() for item in value["bubbles"] if item.strip() not in deleted))
-        return {"version": 1, "bubbles": bubbles[:20], "deletedBubbles": deleted[-40:]}
+        return {
+            "version": 1,
+            "bubbles": bubbles[:20],
+            "deletedBubbles": deleted[-40:],
+            "hiddenStarFound": hidden_star,
+            "hiddenButterflyFound": hidden_butterfly,
+        }
     return None
 
 
@@ -154,6 +190,11 @@ def _merge_progress(feature, current, incoming):
             "version": 1,
             "discovered": [item for item in ATLAS_DISCOVERIES if item in set(current["discovered"]) | set(incoming["discovered"])],
             "puzzleComplete": current["puzzleComplete"] or incoming["puzzleComplete"],
+            "gameCompleted": current.get("gameCompleted", False) or incoming.get("gameCompleted", False),
+            "puzzleConstellation": (
+                incoming.get("puzzleConstellation")
+                or current.get("puzzleConstellation")
+            ),
         }
     if feature == "lullaby":
         deleted = list(dict.fromkeys([*current["deletedBubbles"], *incoming["deletedBubbles"]]))[-40:]
@@ -162,6 +203,8 @@ def _merge_progress(feature, current, incoming):
             "version": 1,
             "bubbles": [item for item in bubbles if item not in deleted][-20:],
             "deletedBubbles": deleted,
+            "hiddenStarFound": current.get("hiddenStarFound", False) or incoming.get("hiddenStarFound", False),
+            "hiddenButterflyFound": current.get("hiddenButterflyFound", False) or incoming.get("hiddenButterflyFound", False),
         }
     return {
         "version": 1,

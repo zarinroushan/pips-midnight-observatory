@@ -137,6 +137,57 @@ let gameMuted = false;
 let gameToken = 0;
 let musicBoxTimer = 0;
 let discoveryNear = false;
+const discoveryStorageKey = 'dear-pip-lullaby-discoveries-v1';
+let hiddenStarDiscovered = false;
+let hiddenButterflyDiscovered = false;
+
+try {
+  const savedDiscoveries = JSON.parse(localStorage.getItem(discoveryStorageKey) || '{}');
+  if (savedDiscoveries?.hiddenStarFound === true) hiddenStarDiscovered = true;
+  if (savedDiscoveries?.hiddenButterflyFound === true) hiddenButterflyDiscovered = true;
+} catch (_error) {}
+
+function lullabyProgressSnapshot() {
+  const bubbleTexts = bubbles.map((b) => (typeof b === 'string' ? b : b.text)).filter(Boolean);
+  return {
+    version: 1,
+    bubbles: bubbleTexts,
+    deletedBubbles: [],
+    hiddenStarFound: hiddenStarDiscovered,
+    hiddenButterflyFound: hiddenButterflyDiscovered,
+  };
+}
+
+function syncLullabyProgress() {
+  try {
+    localStorage.setItem(discoveryStorageKey, JSON.stringify({
+      hiddenStarFound: hiddenStarDiscovered,
+      hiddenButterflyFound: hiddenButterflyDiscovered,
+    }));
+  } catch (_error) {}
+  if (window.DearPipProgress) {
+    window.DearPipProgress.save('lullaby', lullabyProgressSnapshot()).catch((error) => {
+      console.info('Could not sync Lullaby Lab progress:', error);
+    });
+  }
+}
+
+if (window.DearPipProgress) {
+  window.DearPipProgress.load('lullaby', lullabyProgressSnapshot()).then(({ data }) => {
+    if (data) {
+      if (data.hiddenStarFound) hiddenStarDiscovered = true;
+      if (data.hiddenButterflyFound) hiddenButterflyDiscovered = true;
+      try {
+        localStorage.setItem(discoveryStorageKey, JSON.stringify({
+          hiddenStarFound: hiddenStarDiscovered,
+          hiddenButterflyFound: hiddenButterflyDiscovered,
+        }));
+      } catch (_error) {}
+    }
+  }).catch((error) => {
+    console.info('Could not load Lullaby Lab progress:', error);
+  });
+}
 
 function setTextStatus(element, message) {
   if (element) element.textContent = message;
@@ -1078,7 +1129,12 @@ function collectStar(event) {
   if (!searchActive || discoveryMode !== 'night' || collectedStars.has(index) || !illuminatedStars.has(index) || !torchContainsStar(index)) return;
   collectedStars.add(index);
   illuminatedStars.delete(index);
-  gardenScene.classList.toggle('has-all-stars', collectedStars.size === hiddenTargets.length);
+  const allStarsFound = collectedStars.size === hiddenTargets.length;
+  if (allStarsFound) {
+    hiddenStarDiscovered = true;
+    syncLullabyProgress();
+  }
+  gardenScene.classList.toggle('has-all-stars', allStarsFound);
   updateTargetAvailability();
   updateDiscoveryStatus();
   ensureAudioContext().then((ready) => {
@@ -1091,8 +1147,12 @@ function catchButterfly(event) {
   if (!searchActive || discoveryMode !== 'day' || !nearbyButterflies.has(index) || collectedButterflies.has(index)) return;
   nearbyButterflies.delete(index);
   collectedButterflies.add(index);
-  discoveryNear = nearbyButterflies.size > 0;
   targetDiscovered = collectedButterflies.size === butterflyTargets.length;
+  if (targetDiscovered) {
+    hiddenButterflyDiscovered = true;
+    syncLullabyProgress();
+  }
+  discoveryNear = nearbyButterflies.size > 0;
   gardenScene.classList.toggle('is-near', discoveryNear);
   gardenScene.classList.toggle('has-all-butterflies', targetDiscovered);
   if (targetDiscovered) gardenScene.classList.add('is-discovered');

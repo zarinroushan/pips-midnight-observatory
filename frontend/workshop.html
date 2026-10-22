@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#17152c">
   <meta name="description" content="Pip's Workshop is home to Pip's Little Moments, a shared storybook diary of anonymous, server-verified adventures.">
-  <meta name="dear-pip-api-base" content="https://pips-midnight-observatory-egql.onrender.com">
+  <meta name="dear-pip-api-base" content="http://127.0.0.1:5000">
   <title>Pip's Workshop — Pip's Little Moments | Dear Pip</title>
   <script src="theme.js"></script>
   <link rel="stylesheet" href="style.css">
@@ -18,7 +18,6 @@
     <span class="atlas-day-atmosphere__butterfly">🦋</span>
     <span class="atlas-day-atmosphere__sparkle">✧</span>
   </div>
-  <a class="workshop-skip" href="#journalEntries">Skip to Pip's journal</a>
   <header class="workshop-header">
     <a class="workshop-brand" href="index.html" aria-label="Dear Pip home">
       <img class="brand-mascot__image" src="assets/pip.png" alt="" aria-hidden="true">
@@ -50,7 +49,9 @@
           <h2 id="journalTitle">Our little timeline</h2>
           <p id="journalDescription">A shared collection of gentle moments from Pip's world.</p>
         </div>
-        <span class="workshop-journal__ornament" aria-hidden="true">✦</span>
+        <a class="workshop-journal__shortcut" href="dream-garden.html#gardenPrivateDreamTitle" aria-label="Leave a dream for Pip">
+          <span class="workshop-journal__shortcut-icon" aria-hidden="true">💬</span>
+        </a>
       </div>
       <p class="workshop-journal__preview-notice" id="journalPreviewNotice" role="note" hidden>
         Development preview: sample entries for layout testing only. These are not real shared-journal memories.
@@ -72,7 +73,7 @@
     </section>
     <dialog class="workshop-detail" id="journalDetail" aria-labelledby="journalDetailTitle" aria-describedby="journalDetailDescription">
       <article class="workshop-detail__page">
-        <button class="workshop-detail__close" id="journalDetailClose" type="button" aria-label="Close journal detail">Close <span aria-hidden="true">Ã—</span></button>
+        <button class="workshop-detail__close" id="journalDetailClose" type="button" aria-label="Close journal detail">Close <span aria-hidden="true">×</span></button>
         <img class="workshop-detail__illustration" id="journalDetailImage" alt="" hidden>
         <div class="workshop-detail__copy">
           <p class="workshop-eyebrow" id="journalDetailCategory"></p>

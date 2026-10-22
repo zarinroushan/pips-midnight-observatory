@@ -39,6 +39,7 @@ const atlasStorageKey = 'dear-pip-dream-atlas-v1';
 let atlasStorageAvailable = true;
 let puzzleComplete = false;
 let puzzleConstellation = null;
+const completedConstellations = new Set();
 let atlasProgressChangeVersion = 0;
 let selectedObject = null;
 const game = document.querySelector('.atlas-game');
@@ -57,8 +58,23 @@ let activePattern = null;
 let nextStar = 1;
 let puzzleMistakeTimer = 0;
 
+function isAdventureCompleted() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('dear-pip-wishbound-adventure-v1') || 'null');
+    return saved?.version === 1 && saved.completed === true;
+  } catch (_error) {
+    return false;
+  }
+}
+
 function atlasProgressSnapshot() {
-  return { version: 1, discovered: [...discovered], puzzleComplete, puzzleConstellation };
+  return {
+    version: 1,
+    discovered: [...discovered],
+    puzzleComplete: puzzleComplete || completedConstellations.size > 0,
+    puzzleConstellation: selectedObject || puzzleConstellation,
+    gameCompleted: isAdventureCompleted(),
+  };
 }
 
 function readConstellationPattern(objectId) {
@@ -275,6 +291,7 @@ function saveAtlasProgress({ reportDiscovery = false } = {}) {
       : 'Discovered for this visit only; browser and online storage are unavailable.';
   });
 }
+window.saveAtlasProgress = saveAtlasProgress;
 function renderDiscoveryJournal() {
   journalList.replaceChildren();
   [...discovered].forEach((id) => {

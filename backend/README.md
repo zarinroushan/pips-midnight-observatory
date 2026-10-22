@@ -58,9 +58,14 @@ If `guestbook_entries` already exists, ensure it has `id`, `display_name`,
 Migration `003_visitor_progress.sql` adds revisioned progress for home, Atlas,
 bedtime reading, and Lullaby Lab notes.
 Migration `004_public_journal.sql` stores allowlisted, server-authored shared
-journal events without visitor identifiers or private wish text. Apply it before
-the public Workshop timeline is available; readiness reports it as a missing
-table until then.
+journal events without visitor identifiers or private wish text. Migration
+`005_public_journal_discoveries.sql` provides the forward-only schema update for
+databases that already applied migration 004, expanding allowed event types to
+include `atlas_game_completed`, `lullaby_hidden_star`, and `lullaby_hidden_butterfly`.
+Migration `006_public_journal_details.sql` adds allowlisted constellation
+references for detailed Atlas puzzle entries while preserving historical rows.
+Apply them before the public Workshop timeline is available; readiness reports it
+as a missing table until migration 004 is applied.
 
 No schema migration is needed for server-validated Garden sessions: the
 existing `garden_states.visitor_id` UUID key stores the server-generated
@@ -78,6 +83,8 @@ repository root run:
 & 'C:\Program Files\PostgreSQL\18\bin\psql.exe' "$env:DATABASE_URL" -v ON_ERROR_STOP=1 -f .\backend\migrations\002_atlas.sql
 & 'C:\Program Files\PostgreSQL\18\bin\psql.exe' "$env:DATABASE_URL" -v ON_ERROR_STOP=1 -f .\backend\migrations\003_visitor_progress.sql
 & 'C:\Program Files\PostgreSQL\18\bin\psql.exe' "$env:DATABASE_URL" -v ON_ERROR_STOP=1 -f .\backend\migrations\004_public_journal.sql
+& 'C:\Program Files\PostgreSQL\18\bin\psql.exe' "$env:DATABASE_URL" -v ON_ERROR_STOP=1 -f .\backend\migrations\005_public_journal_discoveries.sql
+& 'C:\Program Files\PostgreSQL\18\bin\psql.exe' "$env:DATABASE_URL" -v ON_ERROR_STOP=1 -f .\backend\migrations\006_public_journal_details.sql
 ```
 
 Do not paste credentials into source files or share terminal output that includes

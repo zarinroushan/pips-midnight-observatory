@@ -91,12 +91,17 @@ protected API, scanner limits, and manual-entry workflow.
 
 Apply the non-destructive, rerunnable migrations manually before using the
 database-backed features. Migration 003 adds revisioned visitor progress and
-does not alter Atlas records. From the project root:
+does not alter Atlas records. Migrations 004 and 005 create the shared journal
+and add the Lullaby Lab discovery event types while retaining historical
+entries. From the project root:
 
 ```powershell
 & 'C:\Program Files\PostgreSQL\18\bin\psql.exe' "$env:DATABASE_URL" -v ON_ERROR_STOP=1 -f .\backend\migrations\001_garden_state.sql
 & 'C:\Program Files\PostgreSQL\18\bin\psql.exe' "$env:DATABASE_URL" -v ON_ERROR_STOP=1 -f .\backend\migrations\002_atlas.sql
 & 'C:\Program Files\PostgreSQL\18\bin\psql.exe' "$env:DATABASE_URL" -v ON_ERROR_STOP=1 -f .\backend\migrations\003_visitor_progress.sql
+& 'C:\Program Files\PostgreSQL\18\bin\psql.exe' "$env:DATABASE_URL" -v ON_ERROR_STOP=1 -f .\backend\migrations\004_public_journal.sql
+& 'C:\Program Files\PostgreSQL\18\bin\psql.exe' "$env:DATABASE_URL" -v ON_ERROR_STOP=1 -f .\backend\migrations\005_public_journal_discoveries.sql
+& 'C:\Program Files\PostgreSQL\18\bin\psql.exe' "$env:DATABASE_URL" -v ON_ERROR_STOP=1 -f .\backend\migrations\006_public_journal_details.sql
 ```
 
 The migration does not run at app startup. Do not include a real database URL

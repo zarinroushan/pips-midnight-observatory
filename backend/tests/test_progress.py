@@ -54,6 +54,10 @@ class FakeProgressConnection:
                 ("home", {"version": 1, "collected": [0, 1], "collectedButterflies": []}),
                 ("atlas", {"version": 1, "discovered": ["lantern"], "puzzleComplete": True}),
             ]
+        elif query.startswith("SAVEPOINT") or query.startswith("RELEASE SAVEPOINT") or query.startswith("ROLLBACK"):
+            self.fetchone_result = None
+        elif query.startswith("INSERT INTO public_journal_events"):
+            self.fetchone_result = (1,)
         else:
             raise AssertionError(f"Unexpected progress query: {query}")
         return self
@@ -158,6 +162,51 @@ class VisitorProgressApiTests(unittest.TestCase):
         self.assertIn("Collected 2 of 5 dream stars.", labels)
         self.assertIn("Completed the Sleepy Fox star puzzle.", labels)
         self.assertIn("Fulfilled 1 garden wishes.", labels)
+
+    def test_lullaby_progress_validation_merging_and_discoveries(self):
+        # Validates without discovery flags (backward compatible)
+        base = _validated_progress("lullaby", {"version": 1, "bubbles": ["sweet dream"], "deletedBubbles": []})
+        self.assertIsNotNone(base)
+        self.assertFalse(base["hiddenStarFound"])
+        self.assertFalse(base["hiddenButterflyFound"])
+        self.assertEqual(base["bubbles"], ["sweet dream"])
+
+        # Validates with discovery flags
+        discovered = _validated_progress("lullaby", {
+            "version": 1,
+            "bubbles": ["sweet dream"],
+            "deletedBubbles": [],
+            "hiddenStarFound": True,
+            "hiddenButterflyFound": True,
+        })
+        self.assertIsNotNone(discovered)
+        self.assertTrue(discovered["hiddenStarFound"])
+        self.assertTrue(discovered["hiddenButterflyFound"])
+
+        # Rejects non-boolean discovery flags
+        self.assertIsNone(_validated_progress("lullaby", {
+            "version": 1,
+            "bubbles": [],
+            "deletedBubbles": [],
+            "hiddenStarFound": "yes",
+        }))
+
+        # Merging preserves discovery state across sessions
+        merged = _merge_progress("lullaby", base, discovered)
+        self.assertTrue(merged["hiddenStarFound"])
+        self.assertTrue(merged["hiddenButterflyFound"])
+
+        # Saving and loading via API
+        url = f"/api/progress/{self.visitor_id}/lullaby"
+        put_response = self.client.put(url, json={"revision": 0, "data": discovered})
+        self.assertEqual(put_response.status_code, 200)
+        self.assertEqual(put_response.get_json()["revision"], 1)
+
+        get_response = self.client.get(url)
+        self.assertEqual(get_response.status_code, 200)
+        loaded_data = get_response.get_json()["data"]
+        self.assertTrue(loaded_data["hiddenStarFound"])
+        self.assertTrue(loaded_data["hiddenButterflyFound"])
 
     def test_missing_progress_table_returns_safe_migration_error(self):
         with patch("backend.database.psycopg.connect", side_effect=psycopg.errors.UndefinedTable("private table detail")):

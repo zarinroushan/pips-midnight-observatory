@@ -172,7 +172,14 @@ test('Pip has one GLB viewer, one caption, and no static reader image', () => {
   assert.match(html, /bedtime-pip-3d\.js/);
   assert.doesNotMatch(html, /bedtimePipStatus|rive-app|pipCanvas/);
   assert.doesNotMatch(script, /rive\.Rive|pipCanvas|pipAnimationName/);
-  assert.ok(fs.existsSync(path.join(frontendDirectory, 'assets', 'animated_pip.glb')));
+  assert.doesNotMatch(
+  	pipModule,
+  	/assets\/animated_pip\.glb/
+  );
+  assert.match(
+  	pipModule,
+  	/https:\/\/huggingface\.co\/zarinr\/dear-pip-assets\/resolve\/main\/animated_pip\.glb/
+  );
   assert.match(pipModule, /assets\/animated_pip\.glb/);
   assert.match(pipModule, /Hi! I'm Pip, and I've come to tell you the story of \$\{currentRoute\.title\}/);
   assert.match(pipModule, /bedtime:pip-ready/);

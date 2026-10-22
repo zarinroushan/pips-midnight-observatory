@@ -13,6 +13,7 @@ class Element {
     this.tagName = tagName;
     this.children = [];
     this.attributes = new Map();
+    this.dataset = {};
     this.hidden = false;
     this.disabled = false;
     this.textContent = '';
@@ -21,8 +22,44 @@ class Element {
     this.isConnected = true;
     this.focused = false;
   }
-  append(...children) { this.children.push(...children); }
-  replaceChildren(...children) { this.children = children; }
+  get firstChild() {
+    return this.children[0] || null;
+  }
+
+  append(...children) {
+    for (const child of children) {
+      if (child.tagName === '#document-fragment') {
+        this.children.push(...child.children);
+      } else {
+        this.children.push(child);
+      }
+    }
+  }
+
+  appendChild(child) {
+    this.append(child);
+    return child;
+  }
+
+  replaceChildren(...children) {
+    this.children = [];
+    this.append(...children);
+  }
+
+  insertBefore(newNode, referenceNode) {
+    const index = this.children.indexOf(referenceNode);
+    const nodes = newNode.tagName === '#document-fragment'
+      ? [...newNode.children]
+      : [newNode];
+
+    if (index === -1) {
+      this.children.push(...nodes);
+    } else {
+      this.children.splice(index, 0, ...nodes);
+    }
+
+    return newNode;
+  }
   setAttribute(name, value) { this.attributes.set(name, String(value)); }
   addEventListener(name, handler) { this.listeners.set(name, handler); }
   focus() { this.focused = true; }
@@ -62,8 +99,17 @@ async function runWorkshop(fetchImpl, hostname = 'example.test', search = '') {
   const scrollCalls = [];
   const context = {
     document: {
-      querySelector(selector) { return elements[selector] || null; },
-      createElement(tagName) { return new Element(tagName); },
+      hidden: false,
+      querySelector(selector) {
+        return elements[selector] || null;
+      },
+      createElement(tagName) {
+        return new Element(tagName);
+      },
+      createDocumentFragment() {
+        return new Element('#document-fragment');
+      },
+      addEventListener() {},
     },
     window: {
       location: { hostname, origin: `http://${hostname}:5500`, search },
@@ -111,8 +157,8 @@ test('a journal record opens its verified story details and uses text content', 
   button.click();
 
   assert.equal(result.elements['#journalDetail'].open, true);
-  assert.equal(result.elements['#journalDetailTitle'].textContent, 'Pip and the Missing Star');
-  assert.equal(result.elements['#journalDetailCategory'].textContent, 'Stories');
+  assert.equal(result.elements['#journalDetailTitle'].textContent, 'Pip read Pip and the Missing Star to Anonymous Visitor');
+  assert.equal(result.elements['#journalDetailCategory'].textContent, 'BEDTIME STORIES');
   assert.equal(result.elements['#journalDetailDescription'].textContent, '<img src=x onerror=alert(1)>');
   assert.equal(result.elements['#journalDetailDescription'].children.length, 0);
   assert.match(result.elements['#journalDetailOutcome'].textContent, /happy ending/);

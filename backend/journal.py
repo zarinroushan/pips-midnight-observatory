@@ -32,17 +32,37 @@ EVENT_PRESENTATION = {
     "garden_wish": {
         "category": "Dream Garden",
         "icon": "✿",
-        "message": "A garden friend's wish found its way to a happy ending.",
+        "title": "A garden wish found a little more room for hope",
+        "message": "Pip made a little more room for hope in the garden.",
     },
     "home_stars": {
         "category": "Dream Garden",
         "icon": "✦",
+        "title": "Five stars gathered",
         "message": "I found all five sparkling stars in the garden!",
     },
     "atlas_puzzle": {
         "category": "Games",
         "icon": "☾",
-        "message": "We connected a constellation in the Dream Atlas together!",
+        "message": "A constellation was connected in the Dream Atlas.",
+    },
+    "atlas_game_completed": {
+        "category": "Games",
+        "icon": "★",
+        "title": "Pip helped Anonymous Visitor complete the Dream Atlas adventure",
+        "message": "Pip’s Wishbound Adventure reached its victory at the far end of the cloud path.",
+    },
+    "lullaby_hidden_star": {
+        "category": "Lullaby Lab",
+        "icon": "✦",
+        "title": "Found the Hidden Stars",
+        "message": "Anonymous Visitor completed the hidden-star discovery in Lullaby Lab.",
+    },
+    "lullaby_hidden_butterfly": {
+        "category": "Lullaby Lab",
+        "icon": "🦋",
+        "title": "Found the Hidden Butterflies",
+        "message": "Anonymous Visitor completed the hidden-butterfly discovery in Lullaby Lab.",
     },
 }
 
@@ -56,6 +76,24 @@ STORY_TITLES = {
     "nova-day": "Nova's Slow and Steady Day",
     "mochi-place": "Mochi's Peaceful Place",
     "pippa-song": "Pippa's Song of Stars",
+}
+STORY_DESCRIPTIONS = {
+    "missing-star": "Pip helped a tiny fallen star find a gentle home among the sky, clouds, or garden.",
+    "lumi-wish": "Lumi learned that helping each flower one at a time could bring her shimmering wish to life.",
+    "music-box": "Pip followed a remembered melody until the sleeping music box could offer comfort again.",
+    "lantern-path": "Pip followed a warm lantern path and helped a lost friend find the way home.",
+    "little-lights": "Pip and the Garden Friends discovered how their small lights belong together.",
+    "ember-glow": "Ember discovered that courage can be a small light shared with a friend.",
+    "nova-day": "Nova found a slow, steady pace for the journey to plant a moonflower seed.",
+    "mochi-place": "Mochi and Pip found a quiet corner where the garden felt safe and peaceful.",
+    "pippa-song": "Pippa found her beloved melody again with patient listening and a friend nearby.",
+}
+ATLAS_PUZZLE_NAMES = {
+    "lantern": "The Lantern Fox",
+    "sail": "The Moon-Sail",
+    "whale": "The Cloud Whale",
+    "garden": "The Dreaming Garden",
+    "bell": "The Pillow Bell",
 }
 
 
@@ -88,6 +126,8 @@ def record_event(connection, visitor_id, event_key, event_type, reference_key=No
         return False
     if event_type == "story_complete" and reference_key not in STORY_TITLES:
         return False
+    if event_type == "atlas_puzzle" and reference_key is not None and reference_key not in ATLAS_PUZZLE_NAMES:
+        return False
     digest = _dedupe_key(visitor_id, event_key, secret_key)
     if not digest:
         return False
@@ -110,12 +150,29 @@ def _safe_event(row):
         presentation = {
             "category": "Stories",
             "icon": "✧",
-            "message": f"We reached the happy ending of {title} together!",
+            "title": f"Pip read {title} to Anonymous Visitor",
+            "message": STORY_DESCRIPTIONS[reference_key],
         }
     else:
         presentation = EVENT_PRESENTATION.get(event_type)
         if not presentation:
             return None
+        if event_type == "atlas_puzzle":
+            puzzle_name = ATLAS_PUZZLE_NAMES.get(reference_key)
+            presentation = {
+                **presentation,
+                "title": (
+                    f"Pip helped Anonymous Visitor connect {puzzle_name}"
+                    if puzzle_name else
+                    "Pip helped Anonymous Visitor connect a constellation"
+                ),
+                "message": (
+                    f"Anonymous Visitor connected {puzzle_name} in the Dream Atlas."
+                    if puzzle_name else presentation["message"]
+                ),
+            }
+        elif event_type in {"garden_wish", "home_stars"}:
+            presentation = {**presentation, "title": presentation["title"]}
     happened_at = created_at
     if happened_at.tzinfo is None:
         happened_at = happened_at.replace(tzinfo=timezone.utc)
@@ -123,7 +180,9 @@ def _safe_event(row):
         "eventType": event_type,
         "category": presentation["category"],
         "icon": presentation["icon"],
+        "title": presentation["title"],
         "message": presentation["message"],
+        "visitorName": "Anonymous Visitor",
         "happenedAt": happened_at.isoformat(),
         **({"storyId": reference_key} if event_type == "story_complete" else {}),
     }

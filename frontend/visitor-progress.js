@@ -5,7 +5,9 @@
   const apiBase = (configuredBase || (
     ['localhost', '127.0.0.1'].includes(window.location.hostname)
       ? 'http://127.0.0.1:5000'
-      : window.location.origin
+      : (window.location.hostname.endsWith('vercel.app')
+        ? 'https://pips-midnight-observatory-egql.onrender.com'
+        : window.location.origin)
   )).replace(/\/+$/, '');
   const revisions = new Map();
   const loading = new Map();
@@ -40,6 +42,8 @@
         version: 1,
         discovered: [...new Set(value.discovered.filter((item) => known.has(item)))],
         puzzleComplete: value.puzzleComplete === true,
+        gameCompleted: value.gameCompleted === true,
+        puzzleConstellation: known.has(value.puzzleConstellation) ? value.puzzleConstellation : null,
       };
     }
     if (feature === 'bedtime') {
@@ -71,6 +75,8 @@
         version: 1,
         bubbles: [...new Set(value.bubbles.filter((item) => typeof item === 'string' && item.trim() && item.length <= 240).map((item) => item.trim()))].filter((item) => !removed.has(item)).slice(-20),
         deletedBubbles,
+        hiddenStarFound: value.hiddenStarFound === true,
+        hiddenButterflyFound: value.hiddenButterflyFound === true,
       };
     }
     return null;
@@ -93,6 +99,8 @@
         version: 1,
         discovered: [...new Set([...left.discovered, ...right.discovered])],
         puzzleComplete: left.puzzleComplete || right.puzzleComplete,
+        gameCompleted: Boolean(left.gameCompleted || right.gameCompleted),
+        puzzleConstellation: right.puzzleConstellation || left.puzzleConstellation || null,
       };
     }
     if (feature === 'bedtime') {
@@ -110,6 +118,8 @@
       version: 1,
       bubbles: [...new Set([...left.bubbles, ...right.bubbles])].filter((item) => !removed.has(item)).slice(-20),
       deletedBubbles,
+      hiddenStarFound: Boolean(left.hiddenStarFound || right.hiddenStarFound),
+      hiddenButterflyFound: Boolean(left.hiddenButterflyFound || right.hiddenButterflyFound),
     };
   }
 
@@ -170,9 +180,9 @@
     const data = normalize(feature, value);
     if (!data) return false;
     if (feature === 'home') return data.collected.length > 0 || data.collectedButterflies.length > 0;
-    if (feature === 'atlas') return data.discovered.length > 0 || data.puzzleComplete;
+    if (feature === 'atlas') return data.discovered.length > 0 || data.puzzleComplete || data.gameCompleted;
     if (feature === 'bedtime') return data.scene !== 'opening' || data.visited.length > 1 || data.completed.length > 0;
-    return data.bubbles.length > 0 || data.deletedBubbles.length > 0;
+    return data.bubbles.length > 0 || data.deletedBubbles.length > 0 || data.hiddenStarFound || data.hiddenButterflyFound;
   }
 
   async function load(feature, localValue) {

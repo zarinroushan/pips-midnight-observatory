@@ -131,6 +131,18 @@
   }
 
   function saveVictory() {
+
+    console.log('[Atlas] saveVictory called');
+
+    console.log(
+      '[Atlas] saveAtlasProgress:',
+      typeof window.saveAtlasProgress
+    );
+
+    console.log(
+      '[Atlas] DearPipProgress:',
+      typeof window.DearPipProgress
+    );
     const firstFinish = !achievementAwarded;
     achievementAwarded = true;
     gameSaved = true;
@@ -152,6 +164,18 @@
       elements.achievement.textContent = firstFinish
         ? 'First Wish Fulfilled achievement earned for this visit.'
         : 'First Wish Fulfilled achievement already earned on this device.';
+    }
+    if (typeof window.saveAtlasProgress === 'function') {
+      window.saveAtlasProgress();
+    } else if (window.DearPipProgress) {
+      window.DearPipProgress.save('atlas', {
+        version: 1,
+        discovered: [],
+        puzzleComplete: false,
+        gameCompleted: true,
+      }).catch((error) => {
+        console.error('Could not sync adventure progress:', error);
+      });
     }
   }
 
