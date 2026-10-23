@@ -230,7 +230,7 @@ class GuestbookAndGardenApiTests(unittest.TestCase):
             400,
         )
 
-    def test_guestbook_submission_is_pending_and_parameterized(self):
+    def test_guestbook_submission_is_published_immediately_and_parameterized(self):
         response = self.client.post(
             "/api/guestbook",
             json={
@@ -239,30 +239,30 @@ class GuestbookAndGardenApiTests(unittest.TestCase):
             },
         )
         self.assertEqual(response.status_code, 201)
-        self.assertEqual(response.get_json()["entry"]["status"], "pending")
+        self.assertEqual(response.get_json()["entry"]["status"], "approved")
         self.assertEqual(
             self.connection.insert_params,
             (
                 "Test Dreamer",
                 "I wish Pip could build a tiny star-catching machine.",
-                "pending",
+                "approved",
             ),
         )
         self.assertIn("VALUES (%s, %s, %s)", self.connection.last_query)
 
-    def test_guestbook_empty_name_is_anonymous_and_pending(self):
+    def test_guestbook_empty_name_is_anonymous_and_published(self):
         response = self.client.post(
             "/api/guestbook",
             json={"display_name": "  ", "dream_message": "A small, hopeful dream"},
         )
         self.assertEqual(response.status_code, 201)
         self.assertEqual(self.connection.insert_params[0], "Anonymous")
-        self.assertEqual(self.connection.insert_params[2], "pending")
-        self.assertEqual(response.get_json()["entry"]["status"], "pending")
+        self.assertEqual(self.connection.insert_params[2], "approved")
+        self.assertEqual(response.get_json()["entry"]["status"], "approved")
         public_entries = self.client.get("/api/guestbook").get_json()["entries"]
         self.assertNotIn(response.get_json()["entry"]["id"], [entry["id"] for entry in public_entries])
 
-    def test_guestbook_lists_approved_only_and_bounds_limit(self):
+    def test_guestbook_lists_public_entries_and_bounds_limit(self):
         response = self.client.get("/api/guestbook?limit=2")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_json()["entries"][0]["display_name"], "Approved Dreamer")

@@ -134,15 +134,17 @@ def record_event(connection, visitor_id, event_key, event_type, reference_key=No
     if not _allow_event_write():
         return False
     inserted = connection.execute(
-        """INSERT INTO public_journal_events (event_type, reference_key, dedupe_key)
-           VALUES (%s, %s, %s) ON CONFLICT (dedupe_key) DO NOTHING RETURNING id""",
-        (event_type, reference_key, digest),
+        """INSERT INTO public_journal_events
+        (event_type, reference_key, dedupe_key, visitor_id)
+        VALUES (%s, %s, %s, %s)
+        ON CONFLICT (dedupe_key) DO NOTHING RETURNING id""",
+        (event_type, reference_key, digest, visitor_id),
     ).fetchone()
     return inserted is not None
 
 
 def _safe_event(row):
-    event_type, reference_key, created_at = row
+    event_id, event_type, reference_key, created_at, guestbook_name = row
     if event_type == "story_complete":
         title = STORY_TITLES.get(reference_key)
         if not title:
@@ -182,7 +184,8 @@ def _safe_event(row):
         "icon": presentation["icon"],
         "title": presentation["title"],
         "message": presentation["message"],
-        "visitorName": "Anonymous Visitor",
+        "visitorName": guestbook_name or "Anonymous Visitor",
+        "guestbookName": guestbook_name or "Anonymous Visitor",
         "happenedAt": happened_at.isoformat(),
         **({"storyId": reference_key} if event_type == "story_complete" else {}),
     }
@@ -216,8 +219,25 @@ def get_public_journal():
     try:
         with connect_database(connection_url) as connection:
             rows = connection.execute(
-                """SELECT event_type, reference_key, created_at
-                   FROM public_journal_events ORDER BY id DESC LIMIT %s""",
+                """SELECT
+                        e.id,
+                        e.event_type,
+                        e.reference_key,
+                        e.created_at,
+                        g.display_name
+                    FROM public_journal_events e
+                    LEFT JOIN LATERAL (
+                        SELECT g.display_name
+                        FROM guestbook_entries g
+                        WHERE g.visitor_id = e.visitor_id
+                        AND g.status = 'approved'
+                        AND g.display_name IS NOT NULL
+                        AND g.display_name != 'Anonymous'
+                        ORDER BY g.created_at DESC, g.id DESC
+                        LIMIT 1
+                    ) g ON TRUE
+                    ORDER BY e.id DESC
+                    LIMIT %s""",
                 (PUBLIC_JOURNAL_LIMIT,),
             ).fetchall()
     except psycopg.Error as error:

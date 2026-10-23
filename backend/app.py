@@ -491,11 +491,11 @@ def list_guestbook_entries():
                 """
                 SELECT id, display_name, dream_message, created_at
                 FROM guestbook_entries
-                WHERE status = %s
+                WHERE status != 'rejected'
                 ORDER BY created_at DESC, id DESC
                 LIMIT %s
                 """,
-                ("approved", limit),
+                (limit,),
             ).fetchall()
     except psycopg.errors.UndefinedTable:
         app.logger.error("Guestbook table is missing; verify its database schema.")
@@ -519,8 +519,12 @@ def submit_guestbook_entry():
     if not request.is_json:
         return jsonify(error="A JSON request body is required."), 400
     payload = request.get_json(silent=True)
-    if not isinstance(payload, dict) or set(payload) - {"display_name", "dream_message"}:
+    if not isinstance(payload, dict) or set(payload) - {
+        "display_name", "dream_message", "visitor_id"
+    }:
         return jsonify(error="A JSON object is required."), 400
+
+    visitor_id = garden_visitor_id(create=True)
 
     dream_message = payload.get("dream_message")
     if not isinstance(dream_message, str):
@@ -550,12 +554,30 @@ def submit_guestbook_entry():
         with connect_database(connection_url) as connection:
             row = connection.execute(
                 """
-                INSERT INTO guestbook_entries (display_name, dream_message, status)
-                VALUES (%s, %s, %s)
-                RETURNING id, status, created_at
+                INSERT INTO guestbook_entries
+                    (display_name, dream_message, status, visitor_id)
+                VALUES (%s, %s, %s, %s)
+                RETURNING id, status, created_at, visitor_id
                 """,
-                (display_name, dream_message, "pending"),
+                (display_name, dream_message, "approved", visitor_id),
             ).fetchone()
+
+            # Link the guestbook name to the latest journal event from this visitor.
+            if visitor_id is not None and row is not None:
+                connection.execute(
+                    """
+                    UPDATE guestbook_entries
+                    SET public_journal_event_id = (
+                        SELECT e.id
+                        FROM public_journal_events e
+                        WHERE e.visitor_id = %s
+                        ORDER BY e.id DESC
+                        LIMIT 1
+                    )
+                    WHERE id = %s
+                    """,
+                    (visitor_id, row[0]),
+                )
     except psycopg.errors.UndefinedTable:
         app.logger.error("Guestbook table is missing; apply the backend migration.")
         return jsonify(error="Guestbook storage is not set up yet. Please try again later."), 503
@@ -567,11 +589,12 @@ def submit_guestbook_entry():
         app.logger.error("Guestbook submission returned no persisted entry.")
         return jsonify(error="Guestbook is temporarily unavailable."), 503
     return jsonify(
-        message="Your dream was received and is awaiting review.",
+        message="Your dream has been published!",
         entry={
             "id": row[0],
             "status": row[1],
             "created_at": row[2].isoformat(),
+            "visitor_id": str(row[3]) if row[3] else None,
         },
     ), 201
 
@@ -824,6 +847,30 @@ def fulfill_garden_wish(wish_id):
                     f"garden-wish:{wish_id}",
                     "garden_wish",
                     secret_key=app.config.get("SECRET_KEY"),
+                )
+
+                connection.execute(
+                    """
+                    UPDATE guestbook_entries
+                    SET public_journal_event_id = (
+                        SELECT e.id
+                        FROM public_journal_events e
+                        WHERE e.visitor_id = %s
+                        AND e.event_type = 'garden_wish'
+                        AND e.reference_key = %s
+                        ORDER BY e.id DESC
+                        LIMIT 1
+                    )
+                    WHERE id = (
+                        SELECT g.id
+                        FROM guestbook_entries g
+                        WHERE g.visitor_id = %s
+                        AND g.status = 'approved'
+                        ORDER BY g.created_at DESC, g.id DESC
+                        LIMIT 1
+                    )
+                    """,
+                    (visitor_id, f"garden-wish:{wish_id}", visitor_id),
                 )
             except psycopg.Error as error:
                 connection.execute("ROLLBACK TO SAVEPOINT public_journal_event_write")

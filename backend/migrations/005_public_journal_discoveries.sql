@@ -22,4 +22,3 @@ ALTER TABLE public_journal_events
     );
 
 COMMIT;
-

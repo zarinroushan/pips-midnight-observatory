@@ -136,16 +136,16 @@
     if (entry.eventType === 'story_complete' && stories[entry.storyId]) {
       const story = stories[entry.storyId];
       const cardImage = storyCardImages[entry.storyId] || story.image;
-      const visitorName = 'Anonymous Visitor';
+      const visitorName = entry.guestbookName || 'Anonymous Visitor';
       return {
-        title: `Pip read ${story.title} to ${visitorName}`,
-        category: 'BEDTIME STORIES',
-        message: entry.message,
-        happenedAt: entry.happenedAt,
-        outcome: 'The shared journal records that this story reached its happy ending.',
-        image: story.image,
-        cardImage,
-        alt: `${story.title} storybook cover`,
+          title: `Pip read ${story.title} to ${visitorName}`,
+          category: 'BEDTIME STORIES',
+          message: entry.message,
+          happenedAt: entry.happenedAt,
+          outcome: 'The shared journal records that this story reached its happy ending.',
+          image: story.image,
+          cardImage,
+          alt: `${story.title} storybook cover`,
       };
     }
     const presentation = eventDetails[entry.eventType];
@@ -162,7 +162,7 @@
     } else if (entry.eventType === 'garden_wish') {
       category = 'DREAM GARDEN';
     }
-    const visitorName = 'Anonymous Visitor';
+    const visitorName = entry.guestbookName || 'Anonymous Visitor';
     let title = presentation.title;
     if (entry.eventType === 'atlas_puzzle') {
       title = `Pip helped ${visitorName} connect a constellation`;

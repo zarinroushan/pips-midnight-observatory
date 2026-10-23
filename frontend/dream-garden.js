@@ -656,7 +656,7 @@ function renderGuestbookEntries(entries) {
   if (!entries.length) {
     const empty = document.createElement('li');
     empty.className = 'garden-guestbook__empty';
-    empty.textContent = 'No approved dreams yet. Please check back soon.';
+    empty.textContent = 'No dreams have been shared yet. Be the first!';
     guestbookEntries.append(empty);
     return;
   }
@@ -679,7 +679,7 @@ function renderGuestbookEntries(entries) {
 }
 
 async function loadGuestbookEntries() {
-  guestbookStatus.textContent = 'Loading approved dreams…';
+  guestbookStatus.textContent = 'Loading shared dreams…';
   guestbookStatus.dataset.state = 'loading';
   try {
     const entries = await fetchApprovedGuestbook();
@@ -709,7 +709,7 @@ guestbookForm.addEventListener('submit', async (event) => {
       dream_message: guestbookMessage.value,
     });
     guestbookForm.reset();
-    guestbookStatus.textContent = 'Your dream was received as a pending note. Review controls are not included on this page.';
+    guestbookStatus.textContent = 'Your dream has been published in the Garden!';
     guestbookStatus.dataset.state = 'success';
   } catch (error) {
     guestbookStatus.textContent = guestbookConnectionMessage(error, 'submit');
@@ -730,20 +730,47 @@ async function fetchApprovedGuestbook(request = gardenApiRequest) {
 }
 
 async function submitGuestbookEntry(entry, request = gardenApiRequest) {
+  let visitorId = null;
+
+  try {
+    const savedVisitorId = window.localStorage.getItem(
+      'dear-pip-garden-visitor-v1'
+    );
+
+    if (
+      savedVisitorId &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(savedVisitorId)
+    ) {
+      visitorId = savedVisitorId;
+    }
+  } catch (error) {
+    console.warn('Visitor ID is unavailable; submitting anonymously.', error);
+  }
+
   const response = await request('/api/guestbook', {
     method: 'POST',
     body: JSON.stringify({
       display_name: entry.display_name?.trim() || null,
       dream_message: entry.dream_message.trim(),
+      visitor_id: visitorId,
     }),
   });
+
   const result = await readGardenApiJson(response, 'Guestbook API');
+
   if (!response.ok) {
-    throw new Error(result?.error || `Your dream could not be sent (HTTP ${response.status}).`);
+    throw new Error(
+      result?.error ||
+      `Your dream could not be sent (HTTP ${response.status}).`
+    );
   }
-  if (result?.entry?.status !== 'pending') {
-    throw new Error('The guestbook did not confirm that your message was saved. Please try again later.');
+
+  if (result?.entry?.status !== 'approved') {
+    throw new Error(
+      'The guestbook did not confirm publication. Please try again later.'
+    );
   }
+
   return result;
 }
 
