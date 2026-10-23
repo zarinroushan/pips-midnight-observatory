@@ -12598,3 +12598,158 @@ html[data-mood="dawn"] .lullaby-music-box__particles::after { color: #b28bc6; }
 
 
 
+
+/* =====================================================
+   HOME PAGE — MOBILE STAR COLLECTION BAR
+   ===================================================== */
+
+.home-page .bottom-bar {
+  position: relative;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  width: 100%;
+  min-width: 0;
+  padding: 16px clamp(16px, 4vw, 40px);
+  box-sizing: border-box;
+}
+
+.home-page .collection {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.home-page .collection__icon {
+  flex-shrink: 0;
+  margin-right: 4px;
+}
+
+.home-page #collectionLabel,
+.home-page #starCount,
+.home-page #collectionLimit {
+  white-space: nowrap;
+}
+
+.home-page .bottom-hint {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  max-width: 100%;
+  min-width: 0;
+  text-align: center;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.home-page .bottom-hint span {
+  flex-shrink: 0;
+  font-size: 1.2em;
+}
+
+@media (max-width: 600px) {
+  .home-page .bottom-bar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    gap: 10px;
+    padding: 16px 18px calc(18px + env(safe-area-inset-bottom, 0px));
+    text-align: center;
+  }
+
+  .home-page .collection {
+    justify-content: center;
+    gap: 8px;
+    font-size: clamp(11px, 3vw, 14px);
+    letter-spacing: 0.06em;
+  }
+
+  .home-page .bottom-hint {
+    justify-self: center;
+    font-size: clamp(10px, 2.8vw, 13px);
+    letter-spacing: 0.07em;
+  }
+}
+
+
+
+
+/* =====================================================
+   HOME PAGE — MOBILE HEIGHT AND SCROLLING
+   ===================================================== */
+
+@media (max-width: 650px) {
+  html,
+  body.home-page {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    min-height: 100%;
+    height: auto;
+    overflow-x: clip;
+    overflow-y: auto;
+  }
+
+  body.home-page .scene {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    height: auto;
+    min-height: 100svh;
+    max-height: none;
+    overflow-x: clip;
+    overflow-y: visible;
+  }
+
+  body.home-page .hero {
+    min-width: 0;
+    max-width: 100%;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    overflow: visible;
+  }
+
+  body.home-page .hero__copy {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  body.home-page .hero__intro {
+    max-width: 100%;
+    overflow-wrap: normal;
+    line-height: 1.65;
+  }
+
+  body.home-page .topbar {
+    min-width: 0;
+    max-width: 100%;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  body.home-page .topbar__right {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  body.home-page .star-field {
+    max-width: 100%;
+  }
+
+  body.home-page .bottom-bar {
+    flex-shrink: 0;
+  }
+}

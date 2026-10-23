@@ -426,7 +426,6 @@ pipButton.addEventListener('click', () => {
 });
 
 pipButton.addEventListener('pointermove', (event) => {
-  if (event.pointerType === 'touch') return;
   pipEyes.forEach((eye) => {
     const pupil = eye.querySelector('.pip-pupil');
     if (!pupil) return;
@@ -436,7 +435,9 @@ pipButton.addEventListener('pointermove', (event) => {
     const dy = event.clientY - (rect.top + rect.height / 2);
     const angle = Math.atan2(dy, dx);
     const distance = Math.min(4, Math.hypot(dx, dy) / 12);
-    pupil.style.transform = `translate(${Math.cos(angle) * distance}px, ${Math.sin(angle) * distance}px)`;
+
+    pupil.style.transform =
+      `translate(${Math.cos(angle) * distance}px, ${Math.sin(angle) * distance}px)`;
   });
 });
 
