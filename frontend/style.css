@@ -11262,6 +11262,22 @@ html[data-mood="dawn"] .lullaby-prompt { border-color: rgba(92, 69, 111, .24); b
   color: var(--cream);
   text-align: center;
 }
+
+
+/* Lullaby Lab — centered introduction */
+.lullaby-page .lullaby-intro {
+  width: min(100% - 24px, 760px);
+  margin: 0 auto 24px;
+  text-align: center;
+}
+
+.lullaby-page .lullaby-intro > p:last-child {
+  max-width: 540px;
+  margin: 12px auto 0;
+  line-height: 1.7;
+  text-align: center;
+}
+
 .lullaby-intro h1 { margin: 0; font: 400 clamp(38px, 5vw, 62px)/1.05 var(--serif); letter-spacing: -.04em; }
 .lullaby-intro h1 em { color: var(--pink); font-weight: 400; }
 .lullaby-intro > p:last-child { margin: 10px 0 0; color: var(--muted); font-size: 14px; }
@@ -11455,32 +11471,226 @@ html[data-mood="dawn"] .lullaby-stage .lullaby-panel h2 { color: #fff8f1; }
   .lullaby-intro h1 { font-size: clamp(34px, 9vw, 46px); }
   .lullaby-brand { max-width: 46%; font-size: 8px; letter-spacing: .04em; }
   .lullaby-back { padding: 7px 9px; font-size: 8px; }
-  .lullaby-stage { aspect-ratio: 3 / 2; border-radius: 16px; }
+
+  /* Stage flows naturally on mobile so backdrops stretch and controls stack without overlapping */
+  .lullaby-stage {
+    position: relative;
+    aspect-ratio: auto;
+    min-height: auto;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .lullaby-stage__backdrops {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+  }
   .lullaby-stage__backdrop img { object-position: 34% 50%; }
-  .lullaby-settings { z-index: 9; top: 12px; left: 12px; width: min(300px, calc(100% - 24px)); border-radius: 13px; }
-  .lullaby-settings > summary { display: flex; align-items: center; gap: 8px; min-height: 42px; padding: 0 13px; color: #fff8f1; font: 700 10px/1.4 var(--mono); cursor: pointer; list-style: none; }
+
+  /* Sound settings panel */
+  .lullaby-settings {
+    position: relative;
+    top: auto;
+    left: auto;
+    z-index: 5;
+    width: min(300px, calc(100% - 24px));
+    max-width: 100%;
+    margin: 0 auto;
+    border-radius: 13px;
+  }
+  .lullaby-settings > summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 14px;
+    color: #fff8f1;
+    font: 700 10px/1.4 var(--mono);
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+  }
   .lullaby-settings > summary::-webkit-details-marker { display: none; }
-  .lullaby-settings > summary::after { content: "+"; margin-left: auto; color: #f4cf78; font-size: 18px; }
+  .lullaby-settings > summary::after { content: "+"; margin-left: auto; color: #f4cf78; font-size: 18px; line-height: 1; }
   .lullaby-settings[open] > summary::after { content: "−"; }
   .lullaby-settings:not([open]) .lullaby-panel { display: none; }
   .lullaby-settings .lullaby-panel { padding: 12px; }
   .lullaby-settings .lullaby-panel__heading { display: none; }
-  .lullaby-settings .lullaby-mixer__layers { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 10px; margin: 0; }
-  .lullaby-settings .lullaby-layer { grid-template-columns: minmax(0, 1fr) 66px; }
-  .lullaby-settings .lullaby-layer > label { font-size: 9px; }
-  .lullaby-settings .lullaby-layer input[type="range"] { grid-column: 1 / 3; grid-row: 2; }
+  .lullaby-settings .lullaby-mixer__layers {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0;
+  }
+  .lullaby-settings .lullaby-layer {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 4px;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(255, 248, 241, .12);
+  }
+  .lullaby-settings .lullaby-layer > label {
+    font-size: 10px;
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .lullaby-settings .lullaby-layer input[type="range"] {
+    grid-column: 1 / 3;
+    grid-row: 2;
+    width: 100%;
+    height: 30px;
+    accent-color: #f4cf78;
+  }
   .lullaby-settings .lullaby-layer__availability { display: none; }
-  .lullaby-scenes { top: auto; right: 10px; bottom: calc(100px + env(safe-area-inset-bottom)); left: 10px; display: flex; align-items: center; justify-content: flex-start; gap: 6px; width: auto; padding: 7px; overflow-x: auto; border-radius: 14px; transform: none; }
-  .lullaby-scenes > p { flex: 0 0 auto; margin: 0 4px; writing-mode: vertical-rl; font-size: 7px; }
-  .lullaby-scenes button { flex: 0 0 auto; min-height: 36px; gap: 5px; padding: 5px 7px; font-size: 8px; white-space: nowrap; }
-  .lullaby-player { bottom: max(12px, env(safe-area-inset-bottom)); grid-template-columns: auto auto minmax(80px, 1fr) auto; gap: 7px; width: calc(100% - 20px); padding: 9px 10px; border-radius: 16px; }
-  .lullaby-player__transport .lullaby-button { width: 34px; min-height: 34px; }
-  .lullaby-player__active { grid-column: 3; max-width: 100%; font-size: 8px; }
-  .lullaby-player__activity { grid-column: 2; grid-row: 1; }
-  .lullaby-player .lullaby-volume { grid-column: 1 / 3; grid-row: 2; grid-template-columns: auto minmax(50px, 1fr); }
-  .lullaby-player .lullaby-timer { grid-column: 3 / 5; grid-row: 2; grid-template-columns: auto minmax(60px, 1fr); align-items: center; }
-  .lullaby-player .lullaby-timer select { width: 100%; min-height: 30px; }
-  .lullaby-player .lullaby-status { bottom: calc(100% + 2px); left: 10px; font-size: 8px; }
+  .lullaby-settings .lullaby-reset {
+    width: 100%;
+    min-height: 44px;
+    margin-top: 10px;
+  }
+
+  /* Room scenes selector - 2x2 grid prevents squishing and text overflow */
+  .lullaby-scenes {
+    position: relative;
+    top: auto;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    transform: none;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    width: 100%;
+    padding: 10px;
+    border-radius: 14px;
+    z-index: 4;
+  }
+  .lullaby-scenes > p {
+    grid-column: 1 / -1;
+    margin: 0 0 2px;
+    font: 700 8px/1.3 var(--mono);
+    letter-spacing: .12em;
+    writing-mode: horizontal-tb;
+    display: block;
+    color: #f4cf78;
+  }
+  .lullaby-scenes button {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 44px;
+    gap: 7px;
+    padding: 8px 10px;
+    font-size: 10px;
+    border-radius: 10px;
+    white-space: normal;
+    line-height: 1.25;
+  }
+  .lullaby-scenes button > span:first-child {
+    font-size: 14px;
+    width: 18px;
+    flex-shrink: 0;
+  }
+  .lullaby-scenes button > span:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Audio player panel - organized into clear non-overlapping rows */
+  .lullaby-player {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    transform: none;
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    align-items: center;
+    gap: 10px 8px;
+    width: 100%;
+    padding: 12px;
+    border-radius: 16px;
+    z-index: 4;
+  }
+  .lullaby-player__transport {
+    grid-column: 1;
+    grid-row: 1;
+    display: flex;
+    gap: 6px;
+  }
+  .lullaby-player__transport .lullaby-button {
+    width: 44px;
+    min-height: 44px;
+    border-radius: 10px;
+    font-size: 14px;
+    display: grid;
+    place-items: center;
+  }
+  .lullaby-player__activity {
+    grid-column: 2;
+    grid-row: 1;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    height: 28px;
+  }
+  .lullaby-player__active {
+    grid-column: 3;
+    grid-row: 1;
+    max-width: 100%;
+    min-width: 0;
+    margin: 0;
+    font-size: 9px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .lullaby-player .lullaby-volume {
+    grid-column: 1 / 3;
+    grid-row: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin: 0;
+    font-size: 9px;
+  }
+  .lullaby-player .lullaby-volume input {
+    width: 100%;
+    height: 32px;
+    accent-color: #f4cf78;
+  }
+  .lullaby-player .lullaby-timer {
+    grid-column: 3;
+    grid-row: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin: 0;
+    font-size: 9px;
+  }
+  .lullaby-player .lullaby-timer select {
+    width: 100%;
+    min-height: 38px;
+    font-size: 10px;
+  }
+  .lullaby-player .lullaby-status {
+    position: static;
+    grid-column: 1 / -1;
+    grid-row: 3;
+    left: auto;
+    bottom: auto;
+    margin: 0;
+    font-size: 10px;
+    line-height: 1.4;
+    color: #e5dbe9;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, .6);
+  }
+
   .lullaby-stage__effects--rain { inset: 18% 2% 31% 20%; }
   .lullaby-stage__effects--wind { inset: 18% 4% 36% 16%; }
   .lullaby-nightlight { margin-top: 24px; }
@@ -11489,11 +11699,12 @@ html[data-mood="dawn"] .lullaby-stage .lullaby-panel h2 { color: #fff8f1; }
 }
 
 @media (max-width: 390px) {
-  .lullaby-scenes > p { display: none; }
-  .lullaby-scenes button { padding: 5px 6px; font-size: 7px; }
-  .lullaby-player { grid-template-columns: auto 22px minmax(68px, 1fr) auto; gap: 5px; }
-  .lullaby-player__transport .lullaby-button { width: 31px; }
-  .lullaby-player .lullaby-timer { font-size: 8px; }
+  .lullaby-scenes { gap: 6px; padding: 8px; }
+  .lullaby-scenes button { min-height: 40px; padding: 6px 8px; font-size: 9px; }
+  .lullaby-player { padding: 10px 8px; gap: 8px 6px; }
+  .lullaby-player__transport .lullaby-button { width: 38px; min-height: 38px; }
+  .lullaby-player .lullaby-timer select { min-height: 34px; font-size: 9px; }
+  .lullaby-player .lullaby-status { font-size: 9px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -11882,8 +12093,8 @@ html[data-mood="dawn"] .lullaby-player .lullaby-timer option { color: #fff8f1; b
   overflow: hidden;
   overflow-wrap: anywhere;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
 }
 .lullaby-bubble-list .lullaby-bubble__remove {
   position: absolute;
@@ -11991,7 +12202,7 @@ html[data-mood="dawn"] .lullaby-note.is-active { color: #302b40; }
   font: 11px/1.35 var(--serif);
   text-shadow: 0 1px 7px rgba(20, 15, 42, .52);
 }
-.lullaby-bubble__text { -webkit-line-clamp: 3; line-clamp: 3; }
+.lullaby-bubble__text { -webkit-line-clamp: 4; line-clamp: 4; }
 .lullaby-bubble-list .lullaby-bubble.is-selected { min-height: 0; aspect-ratio: 1; border-radius: 50%; }
 .lullaby-bubble.is-selected .lullaby-bubble__select { border-radius: 50%; }
 .lullaby-bubble.is-selected .lullaby-bubble__text { display: -webkit-box; overflow: hidden; -webkit-line-clamp: 3; line-clamp: 3; }
@@ -12751,5 +12962,1307 @@ html[data-mood="dawn"] .lullaby-music-box__particles::after { color: #b28bc6; }
 
   body.home-page .bottom-bar {
     flex-shrink: 0;
+  }
+}
+
+
+
+
+
+/* Dear Pip — reusable storybook modal */
+.pip-modal {
+  width: min(440px, calc(100vw - 32px));
+  max-width: none;
+  max-height: min(80dvh, 680px);
+  padding: 0;
+  overflow: auto;
+  border: 1px solid rgba(180, 145, 190, 0.45);
+  border-radius: 24px;
+  color: #352d50;
+  background: linear-gradient(145deg, #fffaf5, #f0e7f5);
+  box-shadow: 0 24px 80px rgba(20, 14, 40, 0.35);
+}
+
+.pip-modal[open] {
+  animation: pip-modal-enter 180ms ease-out;
+}
+
+.pip-modal::backdrop {
+  background: rgba(17, 13, 34, 0.62);
+  backdrop-filter: blur(5px);
+}
+
+.pip-modal__card {
+  position: relative;
+  padding: 30px;
+}
+
+.pip-modal__eyebrow {
+  margin: 0 42px 10px 0;
+  color: #8c5c86;
+  font: 700 10px/1.5 "Courier New", monospace;
+  letter-spacing: 0.14em;
+}
+
+.pip-modal__card h2 {
+  margin: 0 42px 12px 0;
+  font: 400 clamp(24px, 5vw, 32px)/1.15 Georgia, serif;
+}
+
+.pip-modal__card #pipModalMessage {
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.pip-modal__close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(110, 91, 128, 0.3);
+  border-radius: 50%;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+
+.pip-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.pip-button {
+  min-height: 44px;
+  padding: 11px 17px;
+  border: 1px solid #b28b43;
+  border-radius: 999px;
+  color: #352d50;
+  background: #f4cf78;
+  cursor: pointer;
+}
+
+.pip-button--quiet {
+  border-color: rgba(110, 91, 128, 0.35);
+  background: transparent;
+}
+
+.pip-button:hover {
+  filter: brightness(1.04);
+}
+
+.pip-button:focus-visible,
+.pip-modal__close:focus-visible {
+  outline: 2px solid #a34063;
+  outline-offset: 3px;
+}
+
+@keyframes pip-modal-enter {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pip-modal[open] {
+    animation: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .pip-modal__card {
+    padding: 24px 20px;
+  }
+}
+
+
+
+
+
+/* ==========================================================================
+   Dear Pip Reusable Guided Tour
+   Accessible, theme-aware, responsive walkthrough with Pip companion.
+   ========================================================================== */
+
+.pip-tour-launcher {
+  position: fixed !important;
+  z-index: 10020 !important;
+  right: 1.25rem !important;
+  bottom: 1.25rem !important;
+  border: 1px solid rgba(255, 248, 241, 0.38) !important;
+  border-radius: 999px !important;
+  padding: 0.72rem 1.15rem !important;
+  background: linear-gradient(135deg, #35284f, #211b38) !important;
+  color: #fff8f1 !important;
+  box-shadow: 0 10px 30px rgba(12, 8, 28, 0.35) !important;
+  cursor: pointer !important;
+  font: 650 0.88rem/1.2 var(--sans, Arial, sans-serif) !important;
+  letter-spacing: 0.02em !important;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease !important;
+}
+
+.pip-tour-launcher:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 14px 36px rgba(12, 8, 28, 0.45) !important;
+  background: linear-gradient(135deg, #423263, #2a2247) !important;
+}
+
+.pip-tour-launcher[hidden] {
+  display: none !important;
+}
+
+.pip-tour-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 10000 !important;
+  background: rgba(9, 7, 22, 0.52) !important;
+  border: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  cursor: pointer !important;
+}
+
+/* Spotlight outline for current target */
+.pip-tour-target {
+  z-index: 10010 !important;
+  outline: 3px solid var(--gold, #f4cf78) !important;
+  outline-offset: 4px !important;
+  border-radius: 14px;
+  box-shadow: 0 0 0 9999px rgba(9, 7, 22, 0.05),
+              0 0 28px rgba(244, 207, 120, 0.4) !important;
+  scroll-margin: 100px;
+}
+
+/* Character targets: neat avatar-hugging rounded rectangles */
+.pip-tour-target.pip-tour-target--pip,
+.dreamworld-pip__avatar.pip-tour-target,
+.garden-companion__avatar.pip-tour-target,
+.atlas-companion__avatar.pip-tour-target,
+#bedtimePipStage.pip-tour-target {
+  border-radius: 22px !important;
+  outline-offset: 4px !important;
+}
+
+/* Ensure Dreamworld island destinations overlay never collapses or shifts during tour */
+.dreamworld-destinations {
+  position: absolute !important;
+  inset: 0 !important;
+  pointer-events: none !important;
+}
+
+/* The tour guide card */
+.pip-tour-card {
+  position: fixed !important;
+  z-index: 10030 !important;
+  left: 50% !important;
+  bottom: 1.5rem !important;
+  transform: translateX(-50%) !important;
+  width: min(440px, calc(100vw - 2rem)) !important;
+  max-height: min(76dvh, 560px) !important;
+  overflow-y: auto !important;
+  box-sizing: border-box !important;
+  padding: 1.1rem 1.25rem 1.1rem !important;
+  border: 1px solid rgba(255, 248, 241, 0.25) !important;
+  border-radius: 22px !important;
+  background: linear-gradient(145deg, rgba(38, 28, 62, 0.985), rgba(20, 16, 38, 0.99)) !important;
+  color: #fff8f1 !important;
+  box-shadow: 0 18px 55px rgba(0, 0, 0, 0.42) !important;
+  font-family: var(--sans, Arial, sans-serif) !important;
+}
+
+/* Desktop docking: when left-hand panel is targeted (e.g. Bedtime Stories reading choices) */
+@media (min-width: 820px) {
+  .pip-tour-card.is-docked-right {
+    left: auto !important;
+    right: 2rem !important;
+    bottom: 2rem !important;
+    transform: none !important;
+  }
+}
+
+.pip-tour-card::before {
+  content: "✦ PIP’S GUIDED TOUR ✦";
+  display: block;
+  margin: 0.05rem 0 0.4rem;
+  color: var(--gold, #f4cf78);
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  font-weight: 800;
+}
+
+.pip-tour-mascot {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.65rem !important;
+  min-height: 52px !important;
+  margin: 0 0 0.35rem !important;
+}
+
+.pip-tour-mascot img {
+  display: block !important;
+  width: 48px !important;
+  height: 54px !important;
+  object-fit: contain !important;
+  object-position: center bottom !important;
+  flex: 0 0 48px !important;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.2)) !important;
+}
+
+.pip-tour-mascot span {
+  color: var(--gold, #f4cf78) !important;
+  font-size: 0.64rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.14em !important;
+}
+
+.pip-tour-card h2 {
+  margin: 0 0 0.4rem !important;
+  font: 700 1.22rem/1.25 var(--serif, Georgia, serif) !important;
+  color: inherit !important;
+}
+
+.pip-tour-card p {
+  margin: 0 !important;
+  color: inherit !important;
+  font-size: 0.92rem !important;
+  line-height: 1.5 !important;
+  opacity: 0.92 !important;
+}
+
+.pip-tour-count {
+  display: block !important;
+  margin-top: 0.65rem !important;
+  font-size: 0.76rem !important;
+  opacity: 0.8 !important;
+}
+
+.pip-tour-actions {
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 0.45rem !important;
+  margin-top: 0.85rem !important;
+}
+
+.pip-tour-actions button {
+  border: 1px solid rgba(255, 248, 241, 0.24) !important;
+  border-radius: 999px !important;
+  padding: 0.5rem 0.78rem !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: inherit !important;
+  cursor: pointer !important;
+  font: 600 0.82rem var(--sans, Arial, sans-serif) !important;
+  transition: background 0.15s ease, opacity 0.15s ease !important;
+}
+
+.pip-tour-actions button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.16) !important;
+}
+
+.pip-tour-actions button[data-tour-next] {
+  margin-left: auto !important;
+  background: var(--gold, #f4cf78) !important;
+  border-color: transparent !important;
+  color: #241b37 !important;
+  font-weight: 800 !important;
+}
+
+.pip-tour-actions button:disabled {
+  opacity: 0.35 !important;
+  cursor: not-allowed !important;
+}
+
+.pip-tour-close {
+  position: absolute !important;
+  right: 0.65rem !important;
+  top: 0.55rem !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: inherit !important;
+  opacity: 0.75 !important;
+  font-size: 1.3rem !important;
+  cursor: pointer !important;
+  line-height: 1 !important;
+  padding: 4px 8px !important;
+}
+
+.pip-tour-close:hover {
+  opacity: 1 !important;
+}
+
+/* Light & Dawn Mood theme support */
+html[data-theme="light"] .pip-tour-card,
+body.light-mode .pip-tour-card,
+body[data-theme="light"] .pip-tour-card,
+body[data-mood="dawn"] .pip-tour-card {
+  background: linear-gradient(145deg, rgba(255, 250, 246, 0.99), rgba(244, 235, 250, 0.99)) !important;
+  color: #30243e !important;
+  border-color: rgba(124, 91, 140, 0.3) !important;
+  box-shadow: 0 18px 48px rgba(73, 48, 87, 0.2) !important;
+}
+html[data-theme="light"] .pip-tour-card h2,
+body.light-mode .pip-tour-card h2,
+body[data-theme="light"] .pip-tour-card h2,
+body[data-mood="dawn"] .pip-tour-card h2 { color: #30243e !important; }
+html[data-theme="light"] .pip-tour-card p,
+body.light-mode .pip-tour-card p,
+body[data-theme="light"] .pip-tour-card p,
+body[data-mood="dawn"] .pip-tour-card p { color: #5f506a !important; }
+html[data-theme="light"] .pip-tour-count,
+body.light-mode .pip-tour-count,
+body[data-theme="light"] .pip-tour-count,
+body[data-mood="dawn"] .pip-tour-count { color: #80628d !important; }
+html[data-theme="light"] .pip-tour-actions button,
+body.light-mode .pip-tour-actions button,
+body[data-theme="light"] .pip-tour-actions button,
+body[data-mood="dawn"] .pip-tour-actions button {
+  color: #44324f !important;
+  border-color: rgba(124, 91, 140, 0.28) !important;
+  background: rgba(255, 255, 255, 0.8) !important;
+}
+html[data-theme="light"] .pip-tour-actions button[data-tour-next],
+body.light-mode .pip-tour-actions button[data-tour-next],
+body[data-theme="light"] .pip-tour-actions button[data-tour-next],
+body[data-mood="dawn"] .pip-tour-actions button[data-tour-next] {
+  background: var(--gold, #f4cf78) !important;
+  color: #30243e !important;
+}
+
+/* Lullaby Lab theme styling */
+body.lullaby-page .pip-tour-card {
+  border-color: rgba(255, 205, 237, 0.5) !important;
+}
+body.lullaby-page .pip-tour-card::before {
+  color: #ffc9e9 !important;
+}
+body.lullaby-page .pip-tour-target {
+  outline-color: #f5b9df !important;
+  box-shadow: 0 0 0 9999px rgba(44, 25, 50, 0.035),
+              0 0 24px rgba(245, 185, 223, 0.45) !important;
+}
+
+/* Mobile & tablet responsive adaptations */
+@media (max-width: 680px) {
+  .pip-tour-card {
+    left: 12px !important;
+    right: 12px !important;
+    bottom: max(12px, env(safe-area-inset-bottom)) !important;
+    transform: none !important;
+    width: auto !important;
+    max-width: none !important;
+    max-height: min(48dvh, 360px) !important;
+    overflow-y: auto !important;
+    padding: 0.85rem 1rem 0.8rem !important;
+    border-radius: 18px !important;
+  }
+  .pip-tour-mascot {
+    min-height: 44px !important;
+    margin-bottom: 0.25rem !important;
+  }
+  .pip-tour-mascot img {
+    width: 38px !important;
+    height: 42px !important;
+    flex-basis: 38px !important;
+  }
+  .pip-tour-card h2 {
+    font-size: 1.05rem !important;
+  }
+  .pip-tour-card p {
+    font-size: 0.84rem !important;
+    line-height: 1.4 !important;
+  }
+  .pip-tour-actions button {
+    padding: 0.45rem 0.6rem !important;
+    font-size: 0.78rem !important;
+  }
+  .pip-tour-launcher {
+    right: 0.75rem !important;
+    bottom: max(0.75rem, env(safe-area-inset-bottom)) !important;
+    padding: 0.55rem 0.8rem !important;
+    font-size: 0.8rem !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .pip-tour-card {
+    padding: 0.75rem !important;
+    max-height: 44dvh !important;
+  }
+  .pip-tour-mascot img {
+    width: 30px !important;
+    height: 34px !important;
+  }
+  .pip-tour-actions {
+    gap: 4px !important;
+  }
+  .pip-tour-actions button {
+    padding: 0.4rem 0.5rem !important;
+    font-size: 0.72rem !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pip-tour-launcher {
+    transition: none !important;
+  }
+}
+
+
+
+
+/* =========================================================
+   DREAMWORLD — ENCHANTED BACKGROUND & SCENERY
+   ========================================================= */
+
+.dreamworld-page {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(ellipse at 50% 12%, rgba(111, 82, 143, 0.32), transparent 45%),
+    radial-gradient(ellipse at 15% 80%, rgba(243, 189, 208, 0.12), transparent 35%),
+    radial-gradient(ellipse at 85% 75%, rgba(244, 207, 120, 0.08), transparent 32%),
+    linear-gradient(180deg, #17152c 0%, #211a39 55%, #17152c 100%) !important;
+}
+
+.dreamworld-page::before {
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  background-image:
+    radial-gradient(2px 2px at 13% 19%, rgba(255, 240, 194, 0.72) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 76% 27%, rgba(243, 189, 208, 0.65) 50%, transparent 100%),
+    radial-gradient(2px 2px at 89% 79%, rgba(255, 240, 194, 0.62) 50%, transparent 100%),
+    radial-gradient(1.2px 1.2px at 35% 82%, rgba(201, 184, 232, 0.5) 50%, transparent 100%);
+  background-size: 440px 370px, 510px 430px, 590px 500px, 380px 340px;
+  content: "";
+  pointer-events: none;
+  animation: garden-sky-twinkle 8s ease-in-out infinite alternate;
+}
+
+.dreamworld-atmosphere {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  user-select: none;
+}
+
+.dreamworld-atmosphere > span {
+  position: absolute;
+  display: block;
+  pointer-events: none;
+}
+
+.dreamworld-cloud svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  fill: rgba(79, 65, 114, 0.24);
+  filter: drop-shadow(0 8px 18px rgba(5, 7, 22, 0.35));
+}
+
+.dreamworld-cloud--one {
+  top: 8%;
+  left: 5%;
+  width: clamp(90px, 12vw, 160px);
+  animation: garden-cloud-drift-one 34s ease-in-out infinite alternate;
+}
+
+.dreamworld-cloud--two {
+  top: 42%;
+  right: 6%;
+  width: clamp(75px, 9vw, 125px);
+  opacity: 0.65;
+  animation: garden-cloud-drift-two 39s ease-in-out infinite alternate;
+}
+
+.dreamworld-cloud--three {
+  top: 78%;
+  left: 12%;
+  width: clamp(80px, 10vw, 135px);
+  opacity: 0.55;
+  animation: garden-cloud-drift-one 43s ease-in-out infinite alternate-reverse;
+}
+
+.dreamworld-sparkle {
+  color: #f4cf78;
+  font-size: 16px;
+  opacity: 0.55;
+  animation: garden-pollen-glimmer 7s ease-in-out infinite alternate;
+}
+
+.dreamworld-sparkle--one { top: 22%; right: 28%; animation-delay: -1s; }
+.dreamworld-sparkle--two { top: 68%; left: 32%; animation-delay: -3s; }
+.dreamworld-sparkle--three { top: 84%; right: 18%; animation-delay: -5s; font-size: 18px; }
+
+.dreamworld-butterfly {
+  display: none;
+  width: 28px;
+  color: #b37b9a;
+  filter: drop-shadow(0 2px 5px rgba(112, 93, 127, 0.16));
+  transform-origin: center;
+  animation: garden-butterfly-drift 15s ease-in-out infinite alternate;
+}
+
+.dreamworld-butterfly svg {
+  display: block;
+  width: 100%;
+  fill: currentColor;
+}
+
+.dreamworld-butterfly--one {
+  top: 25%;
+  right: 18%;
+}
+
+.dreamworld-butterfly--two {
+  top: 60%;
+  left: 15%;
+  width: 24px;
+  color: #829a7a;
+  animation-delay: -6s;
+}
+
+.dreamworld-map-scroll {
+  border: 1px solid rgba(215, 193, 236, 0.22);
+  background:
+    radial-gradient(ellipse at 50% 20%, rgba(111, 82, 143, 0.25), transparent 50%),
+    linear-gradient(180deg, #17152c 0%, #211a39 100%);
+  box-shadow: 0 16px 50px rgba(5, 7, 22, 0.45), 0 0 38px rgba(163, 128, 202, 0.15);
+}
+
+.dreamworld-location {
+  border: 1px solid rgba(244, 207, 120, 0.65);
+  background: rgba(28, 25, 55, 0.94);
+  color: #fff8e8;
+  box-shadow: 0 0 0 3px rgba(244, 207, 120, 0.1), 0 4px 18px rgba(7, 8, 24, 0.45);
+}
+
+/* Light mode — Dreamworld at dawn */
+html[data-mood="dawn"] .dreamworld-page {
+  color: #382c48;
+  background:
+    radial-gradient(ellipse at 50% 10%, rgba(254, 233, 218, 0.65), transparent 45%),
+    radial-gradient(ellipse at 15% 75%, rgba(235, 194, 214, 0.4), transparent 35%),
+    radial-gradient(ellipse at 85% 70%, rgba(218, 207, 239, 0.45), transparent 35%),
+    linear-gradient(180deg, #fff8f1 0%, #faede1 50%, #f4e3eb 100%) !important;
+}
+
+html[data-mood="dawn"] .dreamworld-page::before {
+  opacity: 0.45;
+  background-image:
+    radial-gradient(2px 2px at 13% 19%, rgba(128, 101, 157, 0.4) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 76% 27%, rgba(145, 112, 155, 0.36) 50%, transparent 100%),
+    radial-gradient(2px 2px at 89% 79%, rgba(145, 112, 123, 0.34) 50%, transparent 100%);
+}
+
+html[data-mood="dawn"] .dreamworld-cloud svg {
+  fill: rgba(255, 255, 255, 0.72);
+  filter: drop-shadow(0 8px 16px rgba(118, 131, 165, 0.1));
+}
+
+html[data-mood="dawn"] .dreamworld-butterfly {
+  display: block;
+}
+
+html[data-mood="dawn"] .dreamworld-sparkle {
+  color: #c9934e;
+  opacity: 0.5;
+}
+
+html[data-mood="dawn"] .dreamworld-map-scroll {
+  border: 1px solid rgba(184, 158, 208, 0.35);
+  background:
+    radial-gradient(ellipse at 50% 20%, rgba(255, 235, 215, 0.5), transparent 50%),
+    linear-gradient(180deg, #fbf3ea 0%, #f4e4ed 100%);
+  box-shadow: 0 16px 40px rgba(92, 64, 114, 0.12), 0 0 30px rgba(243, 189, 208, 0.2);
+}
+
+html[data-mood="dawn"] .dreamworld-location {
+  border: 1px solid rgba(145, 112, 175, 0.5);
+  background: rgba(255, 252, 247, 0.95);
+  color: #352d50;
+  box-shadow: 0 0 0 3px rgba(184, 158, 208, 0.15), 0 4px 16px rgba(71, 58, 103, 0.12);
+}
+
+html[data-mood="dawn"] .dreamworld-location:hover,
+html[data-mood="dawn"] .dreamworld-location.is-selected {
+  background: #fff0c8;
+  color: #211a36;
+  border-color: #d4a359;
+  box-shadow: 0 0 0 5px rgba(244, 207, 120, 0.25), 0 0 20px rgba(244, 207, 120, 0.35);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dreamworld-cloud,
+  .dreamworld-sparkle,
+  .dreamworld-butterfly {
+    animation: none !important;
+  }
+}
+
+/* =========================================================
+   SHARED UI — DIALOGS, DROPDOWNS & FORM CONTROLS
+   ========================================================= */
+
+:where(
+  .dreamworld-page,
+  .garden-page,
+  .workshop-page,
+  .lullaby-page,
+  .atlas-page,
+  .bedtime-page
+) :is(input, select, textarea) {
+  max-width: 100%;
+  border: 1px solid rgba(215, 193, 236, 0.38);
+  border-radius: 12px;
+  color: var(--cream);
+  background: rgba(28, 25, 52, 0.96);
+  font: inherit;
+}
+
+:where(
+  .dreamworld-page,
+  .garden-page,
+  .workshop-page,
+  .lullaby-page,
+  .atlas-page,
+  .bedtime-page
+) :is(input, select, textarea):focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+  border-color: var(--gold);
+}
+
+:where(
+  .dreamworld-page,
+  .garden-page,
+  .workshop-page,
+  .lullaby-page,
+  .atlas-page,
+  .bedtime-page
+) select {
+  min-height: 42px;
+  padding: 9px 34px 9px 12px;
+}
+
+:where(
+  .dreamworld-page,
+  .garden-page,
+  .workshop-page,
+  .lullaby-page,
+  .atlas-page,
+  .bedtime-page
+) select option {
+  color: #fff8f1;
+  background: #201e3a;
+}
+
+:where(
+  .dreamworld-page,
+  .garden-page,
+  .workshop-page,
+  .lullaby-page,
+  .atlas-page,
+  .bedtime-page
+) dialog {
+  max-width: min(92vw, 540px);
+  padding: 0;
+  border: 1px solid rgba(215, 193, 236, 0.42);
+  border-radius: 22px;
+  color: var(--cream);
+  background: #211a39;
+  box-shadow: 0 24px 80px rgba(5, 7, 22, 0.55);
+}
+
+:where(
+  .dreamworld-page,
+  .garden-page,
+  .workshop-page,
+  .lullaby-page,
+  .atlas-page,
+  .bedtime-page
+) dialog::backdrop {
+  background: rgba(10, 8, 25, 0.68);
+  backdrop-filter: blur(5px);
+}
+
+html[data-mood="dawn"] :where(
+  .dreamworld-page,
+  .garden-page,
+  .workshop-page,
+  .lullaby-page,
+  .atlas-page,
+  .bedtime-page
+) :is(input, select, textarea) {
+  color: #382c48;
+  border-color: rgba(100, 78, 122, 0.3);
+  background: rgba(255, 250, 244, 0.96);
+}
+
+html[data-mood="dawn"] :where(
+  .dreamworld-page,
+  .garden-page,
+  .workshop-page,
+  .lullaby-page,
+  .atlas-page,
+  .bedtime-page
+) select option {
+  color: #382c48;
+  background: #fffaf4;
+}
+
+html[data-mood="dawn"] :where(
+  .dreamworld-page,
+  .garden-page,
+  .workshop-page,
+  .lullaby-page,
+  .atlas-page,
+  .bedtime-page
+) dialog {
+  color: #382c48;
+  border-color: rgba(100, 78, 122, 0.3);
+  background: #fffaf4;
+}
+
+
+/* =========================================================
+   ENHANCED POLISH — TOUR SPOTLIGHT, MODAL, BUTTONS & HINTS
+   ========================================================= */
+
+/* Guided tour spotlight overlay */
+.pip-tour-spotlight {
+  position: fixed;
+  z-index: 10010;
+  pointer-events: none;
+  border: 3px solid var(--gold, #f4cf78);
+  box-shadow: 0 0 0 9999px rgba(9, 7, 22, 0.55),
+              0 0 28px rgba(244, 207, 120, 0.45);
+  transition: top 180ms ease, left 180ms ease, width 180ms ease, height 180ms ease, border-radius 180ms ease;
+}
+
+html[data-mood="dawn"] .pip-tour-spotlight {
+  border-color: #8c5c86;
+  box-shadow: 0 0 0 9999px rgba(50, 40, 65, 0.45),
+              0 0 24px rgba(140, 92, 134, 0.4);
+}
+
+/* Polished Pip modal (custom confirmation dialog) */
+.pip-modal {
+  width: min(460px, calc(100vw - 32px));
+  max-width: none;
+  max-height: min(85dvh, 680px);
+  padding: 0;
+  overflow: auto;
+  border: 1px solid rgba(244, 207, 120, 0.65);
+  border-radius: 24px;
+  color: var(--cream, #fff8f1);
+  background: linear-gradient(145deg, #211a39, #17152c);
+  box-shadow: 0 24px 80px rgba(7, 5, 18, 0.65), 0 0 32px rgba(244, 207, 120, 0.15);
+}
+
+.pip-modal__eyebrow {
+  margin: 0 42px 10px 0;
+  color: var(--gold, #f4cf78);
+  font: 700 10px/1.5 var(--mono);
+  letter-spacing: 0.14em;
+}
+
+.pip-modal__card h2 {
+  margin: 0 42px 12px 0;
+  color: var(--cream, #fff8f1);
+  font: 400 clamp(24px, 5vw, 30px)/1.15 var(--serif);
+}
+
+.pip-modal__card #pipModalMessage {
+  color: #d9d0e4;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.pip-modal__close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(215, 193, 236, 0.35);
+  border-radius: 50%;
+  color: var(--cream, #fff8f1);
+  background: rgba(33, 26, 57, 0.6);
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  transition: all 180ms ease;
+}
+
+.pip-modal__close:hover {
+  border-color: var(--gold, #f4cf78);
+  color: var(--gold, #f4cf78);
+}
+
+.pip-button {
+  min-height: 42px;
+  padding: 10px 20px;
+  border: 1px solid rgba(244, 207, 120, 0.8);
+  border-radius: 999px;
+  color: #1f1934;
+  background: var(--gold, #f4cf78);
+  font: 700 11px/1.3 var(--mono);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 180ms ease;
+}
+
+.pip-button:hover {
+  background: #ffe399;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(244, 207, 120, 0.3);
+}
+
+.pip-button--quiet {
+  border-color: rgba(215, 193, 236, 0.35);
+  color: var(--cream, #fff8f1);
+  background: transparent;
+}
+
+.pip-button--quiet:hover {
+  border-color: rgba(215, 193, 236, 0.7);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: none;
+}
+
+html[data-mood="dawn"] .pip-modal {
+  border-color: rgba(184, 158, 208, 0.55);
+  color: #352d50;
+  background: linear-gradient(145deg, #fffaf5, #f0e7f5);
+  box-shadow: 0 20px 60px rgba(50, 35, 75, 0.2);
+}
+
+html[data-mood="dawn"] .pip-modal__card h2 {
+  color: #2b2242;
+}
+
+html[data-mood="dawn"] .pip-modal__card #pipModalMessage {
+  color: #53486a;
+}
+
+html[data-mood="dawn"] .pip-modal__close {
+  color: #4a3e62;
+  border-color: rgba(110, 91, 128, 0.3);
+  background: rgba(255, 255, 255, 0.6);
+}
+
+html[data-mood="dawn"] .pip-button--quiet {
+  color: #4a3e62;
+  border-color: rgba(110, 91, 128, 0.35);
+}
+
+/* Restrained Garden reset button */
+.garden-reset {
+  min-height: 38px;
+  padding: 8px 18px;
+  border: 1px solid rgba(244, 207, 120, 0.45);
+  border-radius: 999px;
+  color: #fff4d4;
+  background: rgba(33, 26, 57, 0.85);
+  font: 700 9px/1.3 var(--mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 180ms ease;
+}
+
+.garden-reset:hover:not(:disabled) {
+  border-color: rgba(244, 207, 120, 0.85);
+  background: rgba(45, 36, 75, 0.95);
+  color: #fff8e8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(5, 7, 22, 0.35);
+}
+
+.garden-reset:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.garden-reset:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.garden-reset:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  border-color: rgba(199, 187, 212, 0.25);
+  color: #a49cb5;
+}
+
+html[data-mood="dawn"] .garden-page .garden-reset {
+  border-color: rgba(184, 158, 208, 0.55);
+  color: #433758;
+  background: rgba(255, 250, 244, 0.85);
+}
+
+html[data-mood="dawn"] .garden-page .garden-reset:hover:not(:disabled) {
+  border-color: rgba(145, 112, 175, 0.8);
+  background: #fff8f1;
+  color: #2e2440;
+}
+
+/* Homepage collectible reset button */
+.collection-reset-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 10px;
+  padding: 3px 9px;
+  border: 1px solid rgba(244, 207, 120, 0.4);
+  border-radius: 999px;
+  color: #fff2d2;
+  background: rgba(33, 26, 57, 0.7);
+  font: 700 9px/1.2 var(--mono);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.collection-reset-btn:hover {
+  border-color: rgba(244, 207, 120, 0.8);
+  background: rgba(45, 36, 75, 0.9);
+  color: #fff8e8;
+  transform: translateY(-1px);
+}
+
+.collection-reset-btn:active {
+  transform: translateY(0);
+}
+
+.collection-reset-btn:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+html[data-mood="dawn"] .collection-reset-btn {
+  border-color: rgba(184, 158, 208, 0.5);
+  color: #4a3c63;
+  background: rgba(255, 250, 244, 0.85);
+}
+
+html[data-mood="dawn"] .collection-reset-btn:hover {
+  border-color: rgba(145, 112, 175, 0.8);
+  background: #fff8f1;
+  color: #2e2440;
+}
+
+/* Lullaby Lab sound hint & subtitle centering */
+.lullaby-sound-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  max-width: 580px;
+  margin: 14px auto 0;
+  padding: 8px 16px;
+  border: 1px solid rgba(244, 207, 120, 0.35);
+  border-radius: 999px;
+  color: #fff2d2;
+  background: rgba(33, 26, 57, 0.7);
+  font: 500 12px/1.5 var(--sans);
+  text-align: center;
+}
+
+.lullaby-sound-hint__icon {
+  color: var(--gold, #f4cf78);
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.lullaby-sound-hint strong {
+  color: var(--gold, #f4cf78);
+}
+
+html[data-mood="dawn"] .lullaby-sound-hint {
+  border-color: rgba(184, 158, 208, 0.45);
+  color: #4a3c63;
+  background: rgba(255, 250, 244, 0.85);
+}
+
+html[data-mood="dawn"] .lullaby-sound-hint strong,
+html[data-mood="dawn"] .lullaby-sound-hint__icon {
+  color: #8c5c86;
+}
+
+.lullaby-page .lullaby-intro,
+.lullaby-intro {
+  text-align: center;
+}
+
+.lullaby-page .lullaby-intro h1,
+.lullaby-intro h1 {
+  text-align: center;
+}
+
+.lullaby-page .lullaby-intro > p:last-child,
+.lullaby-intro > p:last-child {
+  max-width: 540px;
+  margin: 12px auto 0 !important;
+  text-align: center !important;
+}
+
+
+
+
+
+
+/* LULLABY LAB — styled sleep timer */
+body.lullaby-page .lullaby-timer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+body.lullaby-page .lullaby-timer select {
+  width: 100%;
+  min-width: 88px;
+  max-width: 150px;
+  min-height: 42px;
+  padding: 9px 34px 9px 12px;
+  border: 1px solid rgba(215, 193, 236, 0.4);
+  border-radius: 12px;
+  color: #fff8f1;
+  background-color: #211a39;
+  color-scheme: dark;
+  font: 600 12px/1.4 "Courier New", monospace;
+  cursor: pointer;
+}
+
+body.lullaby-page .lullaby-timer select:focus-visible {
+  outline: 2px solid #f4cf78;
+  outline-offset: 3px;
+}
+
+body.lullaby-page .lullaby-timer option {
+  color: #fff8f1;
+  background: #211a39;
+}
+
+/* Mobile-only arrangement; desktop is preserved */
+@media (max-width: 620px) {
+  body.lullaby-page .lullaby-player {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    width: 100%;
+    padding: 14px;
+  }
+
+  body.lullaby-page .lullaby-player > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  body.lullaby-page .lullaby-controls,
+  body.lullaby-page .lullaby-controls__buttons {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  body.lullaby-page .lullaby-volume,
+  body.lullaby-page .lullaby-timer {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+    width: 100%;
+  }
+
+  body.lullaby-page .lullaby-timer select {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+
+
+/* DREAM GARDEN — private-wish guardian selector & options styling */
+body.garden-page #gardenPrivateDreamCreature {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 42px 12px 15px;
+  border: 1px solid rgba(201, 184, 232, 0.48);
+  border-radius: 14px;
+  color: #fff8f1;
+  background-color: #211a39;
+  color-scheme: dark;
+  font: 500 14px/1.45 "Segoe UI", Arial, sans-serif;
+  cursor: pointer;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease;
+}
+
+body.garden-page #gardenPrivateDreamCreature:hover {
+  border-color: #f4cf78;
+  background-color: #29203f;
+}
+
+body.garden-page #gardenPrivateDreamCreature:focus-visible {
+  outline: 2px solid #f4cf78;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 5px rgba(244, 207, 120, 0.12);
+}
+
+body.garden-page #gardenPrivateDreamCreature option {
+  color: #fff8f1;
+  background-color: #211a39;
+  padding: 8px 12px;
+}
+
+body.garden-page #gardenPrivateDreamCreature option:checked,
+body.garden-page #gardenPrivateDreamCreature option:hover {
+  background-color: #352a55;
+  color: #f4cf78;
+}
+
+/* Light (dawn) mode guardian dropdown styling */
+html[data-mood="dawn"] body.garden-page #gardenPrivateDreamCreature,
+body.garden-page[data-mood="dawn"] #gardenPrivateDreamCreature,
+html[data-theme="light"] body.garden-page #gardenPrivateDreamCreature,
+body.garden-page.light-mode #gardenPrivateDreamCreature,
+body.garden-page[data-theme="light"] #gardenPrivateDreamCreature {
+  color: #30243e;
+  background-color: #fbf8f5;
+  border-color: rgba(124, 91, 140, 0.38);
+  color-scheme: light;
+}
+
+html[data-mood="dawn"] body.garden-page #gardenPrivateDreamCreature option,
+body.garden-page[data-mood="dawn"] #gardenPrivateDreamCreature option,
+html[data-theme="light"] body.garden-page #gardenPrivateDreamCreature option,
+body.garden-page.light-mode #gardenPrivateDreamCreature option,
+body.garden-page[data-theme="light"] #gardenPrivateDreamCreature option {
+  color: #30243e;
+  background-color: #fbf8f5;
+  padding: 8px 12px;
+}
+
+html[data-mood="dawn"] body.garden-page #gardenPrivateDreamCreature option:checked,
+html[data-mood="dawn"] body.garden-page #gardenPrivateDreamCreature option:hover,
+body.garden-page[data-mood="dawn"] #gardenPrivateDreamCreature option:checked,
+body.garden-page[data-mood="dawn"] #gardenPrivateDreamCreature option:hover {
+  background-color: #ede5f5;
+  color: #53366b;
+}
+
+/* LULLABY LAB — timer dropdown options styling */
+.lullaby-player .lullaby-timer select#lullabySleepTimer option {
+  color: #fff8f1;
+  background-color: #201c32;
+  color-scheme: dark;
+  padding: 6px 10px;
+}
+
+.lullaby-player .lullaby-timer select#lullabySleepTimer option:checked,
+.lullaby-player .lullaby-timer select#lullabySleepTimer option:hover {
+  background-color: #352a55;
+  color: #f4cf78;
+}
+
+/* Active guided tour target elevation */
+.pip-tour-active-target {
+  position: relative;
+  z-index: 10015;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* =========================================================
+   WORKSHOP GUIDED TOUR — stable spotlight and click behavior
+   ========================================================= */
+
+/* The newer JS positions this element using viewport coordinates. */
+.pip-tour-spotlight {
+  position: fixed !important;
+  z-index: 10010 !important;
+  display: none;
+  pointer-events: none !important;
+  border: 3px solid var(--gold, #f4cf78) !important;
+  box-shadow:
+    0 0 0 9999px rgba(9, 7, 22, 0.18),
+    0 0 24px rgba(244, 207, 120, 0.48) !important;
+  box-sizing: border-box !important;
+  transition:
+    top 120ms ease,
+    left 120ms ease,
+    width 120ms ease,
+    height 120ms ease;
+}
+
+/* Do not force a target's positioning or reshape its layout. */
+.pip-tour-active-target {
+  position: relative;
+  scroll-margin-block: 110px;
+}
+
+/* Keep the tour card above the spotlight. */
+.pip-tour-card {
+  position: fixed !important;
+  z-index: 10030 !important;
+  pointer-events: auto !important;
+}
+
+/* Ensure controls inside the guide remain clickable. */
+.pip-tour-card button {
+  position: relative;
+  z-index: 1;
+  pointer-events: auto !important;
+  cursor: pointer;
+}
+
+.pip-tour-card button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Workshop journal targets should keep their normal rectangular shape. */
+body.workshop-page .pip-tour-active-target {
+  border-radius: 14px;
+}
+
+/* The shortcut is a link, so keep it interactive while highlighted. */
+body.workshop-page .workshop-journal__shortcut {
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pip-tour-spotlight {
+    transition: none;
   }
 }

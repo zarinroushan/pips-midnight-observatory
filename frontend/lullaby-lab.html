@@ -12,6 +12,7 @@
   <script src="sounds.js" defer></script>
   <script src="visitor-progress.js" defer></script>
   <script src="lullaby-lab.js" defer></script>
+  <script src="pip-tour.js" defer></script>
 </head>
 <body class="atlas-page lullaby-page">
   <div class="garden-day-atmosphere" aria-hidden="true">
@@ -28,6 +29,7 @@
   <header class="lullaby-header">
     <a class="lullaby-brand" href="index.html" aria-label="Dear Pip home"><img class="brand-mascot__image" src="assets/pip.png" alt="" aria-hidden="true"> DEAR PIP <span>/</span> THE LULLABY LAB</a>
     <button class="mood-toggle page-theme-toggle" type="button" data-theme-toggle aria-pressed="false" aria-label="Switch to light theme"><span data-theme-icon aria-hidden="true">☾</span> <span data-theme-label>Dark mode</span></button>
+    <button class="sound-toggle" id="soundToggle" type="button" aria-pressed="false" aria-label="Turn sound effects on" title="Toggle sound effects">♫ <span data-sound-label>Sound off</span></button>
     <a class="lullaby-back" href="dreamworld.html">← Back to Dreamworld</a>
   </header>
   <main class="lullaby-main">
@@ -35,6 +37,10 @@
       <p class="lullaby-eyebrow">A QUIET CORNER OF THE MIDNIGHT NURSERY</p>
       <h1 id="lullabyTitle">The <em>Lullaby Lab</em></h1>
       <p>Choose a room, gather a few gentle sounds, and settle in with Pip.</p>
+      <p class="lullaby-sound-hint" id="lullabySoundHint">
+        <span class="lullaby-sound-hint__icon" aria-hidden="true">♫</span>
+        <span>Little sounds await! Turn on <strong>♫ Sound</strong> in the header to hear Pip’s tiny chimes and magical effects. The room mixer below plays independently.</span>
+      </p>
     </section>
     <section class="lullaby-stage" id="lullabyExperience" data-scene="sleeping" aria-label="Pip's bedtime ambience">
       <div class="lullaby-stage__backdrops" aria-hidden="true">

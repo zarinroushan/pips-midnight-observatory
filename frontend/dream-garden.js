@@ -747,13 +747,15 @@ async function submitGuestbookEntry(entry, request = gardenApiRequest) {
     console.warn('Visitor ID is unavailable; submitting anonymously.', error);
   }
 
+  const payload = {
+    display_name: entry.display_name?.trim() || null,
+    dream_message: entry.dream_message.trim(),
+  };
+  if (visitorId) payload.visitor_id = visitorId;
+
   const response = await request('/api/guestbook', {
     method: 'POST',
-    body: JSON.stringify({
-      display_name: entry.display_name?.trim() || null,
-      dream_message: entry.dream_message.trim(),
-      visitor_id: visitorId,
-    }),
+    body: JSON.stringify(payload),
   });
 
   const result = await readGardenApiJson(response, 'Guestbook API');
@@ -765,7 +767,7 @@ async function submitGuestbookEntry(entry, request = gardenApiRequest) {
     );
   }
 
-  if (result?.entry?.status !== 'approved') {
+  if (!['approved', 'pending'].includes(result?.entry?.status)) {
     throw new Error(
       'The guestbook did not confirm publication. Please try again later.'
     );
@@ -1617,7 +1619,13 @@ async function fulfillPrivateWish(id) {
   const entry = dreamJournal.find((wish) => wish.id === id);
   if (!entry) return;
   const creature = creatureInfo(entry.creature);
-  if (!window.confirm(`Mark this specific wish with ${creature.name} as fulfilled?\n\n“${entry.wish}”`)) return;
+  const approved = await askPipToConfirm({
+  title: 'A wish comes true',
+  message: `Mark this wish with ${creature.name} as fulfilled?\n\n“${entry.wish}”`,
+  confirmLabel: 'Yes, fulfil it'
+});
+
+if (!approved) return;
 
   fulfillmentPending = true;
   privateDreamStatus.textContent = 'Saving this fulfilled wish…';
@@ -1662,7 +1670,14 @@ async function removePrivateWish(id) {
   if (!gardenSyncReady || !gardenSessionReady || gardenSyncPending || fulfillmentPending
     || pendingWishRemovalIds.has(id)) return;
   const entry = dreamJournal.find((wish) => wish.id === id);
-  if (!entry || !window.confirm(`Remove this private wish for ${creatureInfo(entry.creature).name} and its saved star?`)) return;
+  if (!entry) return;
+  const creature = creatureInfo(entry.creature);
+  const approved = await askPipToConfirm({
+    title: 'Remove private wish?',
+    message: `Remove this private wish for ${creature.name} and its saved star?\n\n“${entry.wish}”`,
+    confirmLabel: 'Yes, remove it'
+  });
+  if (!approved) return;
 
   const previousJournal = [...dreamJournal];
   pendingWishRemovalIds.add(id);
@@ -1848,7 +1863,12 @@ gardenResetButton.addEventListener('click', async () => {
     privateDreamStatus.textContent = 'Wait until your garden is connected and saved before resetting it.';
     return;
   }
-  if (!window.confirm('Start a fresh garden? This will clear planted seeds, discovered friends, and all active and fulfilled private wishes.')) return;
+  const approved = await askPipToConfirm({
+    title: 'Start a fresh garden?',
+    message: 'Start a fresh garden? This will clear planted seeds, discovered friends, and all active and fulfilled private wishes.',
+    confirmLabel: 'Yes, reset garden'
+  });
+  if (!approved) return;
   const previous = {
     plots: plots.map((plot) => plot ? { ...plot } : null),
     plotOwners: [...plotDreamOwners],
@@ -2033,4 +2053,39 @@ if (pipCanvas && window.rive) {
   window.addEventListener('resize', () => pipRive.resizeDrawingSurfaceToCanvas());
 } else if (pipCanvas) {
   console.error('Rive runtime did not load; Pip’s animation is unavailable.');
+}
+
+
+
+
+
+const pipConfirmModal = document.querySelector('#pipConfirmModal');
+const pipModalTitle = document.querySelector('#pipModalTitle');
+const pipModalMessage = document.querySelector('#pipModalMessage');
+
+function askPipToConfirm({ title, message, confirmLabel = 'Yes, continue' }) {
+  if (!pipConfirmModal || typeof pipConfirmModal.showModal !== 'function') {
+    return Promise.resolve(
+      window.confirm(`${title}\n\n${message}`)
+    );
+  }
+
+  pipModalTitle.textContent = title;
+  pipModalMessage.textContent = message;
+
+  const confirmButton = pipConfirmModal.querySelector(
+    'button[value="confirm"]'
+  );
+  confirmButton.textContent = confirmLabel;
+
+  return new Promise((resolve) => {
+    pipConfirmModal.returnValue = '';
+    const handleClose = () => {
+      pipConfirmModal.removeEventListener('close', handleClose);
+      resolve(pipConfirmModal.returnValue === 'confirm');
+    };
+
+    pipConfirmModal.addEventListener('close', handleClose);
+    pipConfirmModal.showModal();
+  });
 }

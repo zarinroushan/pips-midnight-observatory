@@ -12,7 +12,9 @@
   <script src="https://unpkg.com/@rive-app/canvas@2.30.3" defer></script>
   <script src="sounds.js" defer></script>
   <script src="dream-garden.js" defer></script>
+  <script src="pip-tour.js" defer></script>
 </head>
+
 <body class="garden-page">
   <div class="garden-day-atmosphere" aria-hidden="true">
     <span class="garden-day-cloud garden-day-cloud--one">
@@ -313,5 +315,27 @@
       <a href="dream-atlas.html">Dream Atlas</a><a href="bedtime-stories.html">Bedtime Stories</a><a href="lullaby-lab.html">Lullaby Lab</a>
     </nav>
   </footer>
+  <dialog class="pip-modal" id="pipConfirmModal" aria-labelledby="pipModalTitle">
+  <form class="pip-modal__card" method="dialog">
+    <button
+      class="pip-modal__close"
+      value="cancel"
+      aria-label="Close dialog"
+    >×</button>
+
+    <p class="pip-modal__eyebrow">A LITTLE MOMENT WITH PIP</p>
+    <h2 id="pipModalTitle">Are you sure?</h2>
+    <p id="pipModalMessage">Would you like to continue?</p>
+
+    <div class="pip-modal__actions">
+      <button class="pip-button pip-button--quiet" value="cancel">
+        Not yet
+      </button>
+      <button class="pip-button" value="confirm">
+        Yes, continue
+      </button>
+    </div>
+  </form>
+</dialog>
 </body>
 </html>

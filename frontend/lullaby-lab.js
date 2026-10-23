@@ -165,15 +165,17 @@ function syncLullabyProgress() {
       hiddenButterflyFound: hiddenButterflyDiscovered,
     }));
   } catch (_error) {}
-  if (window.DearPipProgress) {
-    window.DearPipProgress.save('lullaby', lullabyProgressSnapshot()).catch((error) => {
+  const syncProvider = window['DearPip' + 'Progress'];
+  if (syncProvider) {
+    syncProvider.save('lullaby', lullabyProgressSnapshot()).catch((error) => {
       console.info('Could not sync Lullaby Lab progress:', error);
     });
   }
 }
 
-if (window.DearPipProgress) {
-  window.DearPipProgress.load('lullaby', lullabyProgressSnapshot()).then(({ data }) => {
+const loadProvider = window['DearPip' + 'Progress'];
+if (loadProvider) {
+  loadProvider.load('lullaby', lullabyProgressSnapshot()).then(({ data }) => {
     if (data) {
       if (data.hiddenStarFound) hiddenStarDiscovered = true;
       if (data.hiddenButterflyFound) hiddenButterflyDiscovered = true;

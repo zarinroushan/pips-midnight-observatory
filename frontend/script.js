@@ -84,6 +84,11 @@ function updateCollectionMode() {
     : 'TAP A STAR TO COLLECT IT ';
   starField.setAttribute('aria-label', isMoonlight ? 'Collect the stars (Midnight mode)' : 'Collect the stars');
   starCount.textContent = String(isMoonlight ? collectedButterflies.size : collectedStars.size);
+  const resetBtn = document.querySelector('#collectionResetBtn');
+  if (resetBtn) {
+    resetBtn.textContent = isMoonlight ? '↻ Reset butterflies' : '↻ Reset stars';
+    resetBtn.setAttribute('aria-label', isMoonlight ? 'Reset butterflies' : 'Reset stars');
+  }
 }
 
 updateCollectionMode();
@@ -309,5 +314,72 @@ if (window.DearPipProgress) {
       return;
     }
     applyHomeProgress(data || homeProgressSnapshot());
+  });
+}
+
+
+function restoreStars() {
+  starField.innerHTML = '';
+  for (let i = 0; i < 5; i += 1) {
+    const button = document.createElement('button');
+    button.className = 'star';
+    button.dataset.starIndex = String(i);
+    button.type = 'button';
+    button.textContent = i % 2 === 0 ? '✦' : '✧';
+    button.setAttribute('aria-label', `Collect dream star ${i + 1}`);
+    button.style.setProperty('--delay', `${i * -0.65}s`);
+    button.style.setProperty('--duration', `${3.2 + (i % 3) * 0.7}s`);
+    button.addEventListener('click', () => collectStar(button, i));
+    starField.append(button);
+  }
+}
+
+function restoreButterflies() {
+  const container = document.querySelector('.daytime-decorations');
+  if (!container) return;
+  container.querySelectorAll('button[data-butterfly]').forEach((btn) => btn.remove());
+  const b0 = document.createElement('button');
+  b0.className = 'day-butterfly day-butterfly--one';
+  b0.type = 'button';
+  b0.dataset.butterfly = '0';
+  b0.setAttribute('aria-label', 'Collect a little butterfly');
+  b0.innerHTML = '<i></i><i></i><b></b>';
+  b0.addEventListener('click', () => collectButterfly(b0, 0));
+  const b1 = document.createElement('button');
+  b1.className = 'day-butterfly day-butterfly--three';
+  b1.type = 'button';
+  b1.dataset.butterfly = '1';
+  b1.setAttribute('aria-label', 'Collect a little butterfly');
+  b1.innerHTML = '<i></i><i></i><b></b>';
+  b1.addEventListener('click', () => collectButterfly(b1, 1));
+  const refSpan = container.querySelector('.day-butterfly--two');
+  if (refSpan) {
+    container.insertBefore(b0, refSpan);
+    refSpan.after(b1);
+  } else {
+    container.prepend(b0, b1);
+  }
+}
+
+const collectionResetBtn = document.querySelector('#collectionResetBtn');
+if (collectionResetBtn) {
+  collectionResetBtn.addEventListener('click', () => {
+    const isDawn = document.documentElement.dataset.mood === 'dawn';
+    if (isDawn) {
+      if (collectedButterflies.size === 0) return;
+      collectedButterflies.clear();
+      restoreButterflies();
+      saveCollectionProgress();
+      updateCollectionMode();
+      showToast('Butterflies reset! Fluttering through the garden ❀');
+    } else {
+      if (collectedStars.size === 0) return;
+      collectedStars.clear();
+      restoreStars();
+      saveCollectionProgress();
+      updateCollectionMode();
+      showToast('Stars reset! Gather them across the night sky ✦');
+    }
+    window.DearPipSounds?.play('theme-toggle');
   });
 }

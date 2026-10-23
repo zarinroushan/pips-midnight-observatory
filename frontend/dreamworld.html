@@ -18,8 +18,29 @@
   <script src="sounds.js" defer></script>
   <script src="dreamworld.js" defer></script>
   <script type="module" src="dreamworld-3d.js"></script>
+  <script src="pip-tour.js" defer></script>
 </head>
 <body class="dreamworld-page">
+  <div class="dreamworld-atmosphere" aria-hidden="true">
+    <span class="dreamworld-cloud dreamworld-cloud--one">
+      <svg viewBox="0 0 120 64"><path d="M25 51h69a18 18 0 0 0 1-36 29 29 0 0 0-54-1A19 19 0 0 0 25 51Z"/></svg>
+    </span>
+    <span class="dreamworld-cloud dreamworld-cloud--two">
+      <svg viewBox="0 0 120 64"><path d="M25 51h69a18 18 0 0 0 1-36 29 29 0 0 0-54-1A19 19 0 0 0 25 51Z"/></svg>
+    </span>
+    <span class="dreamworld-cloud dreamworld-cloud--three">
+      <svg viewBox="0 0 120 64"><path d="M25 51h69a18 18 0 0 0 1-36 29 29 0 0 0-54-1A19 19 0 0 0 25 51Z"/></svg>
+    </span>
+    <span class="dreamworld-butterfly dreamworld-butterfly--one">
+      <svg viewBox="0 0 64 64"><path d="M29 30C21 7 4 9 8 25c2 9 10 14 20 10-8 15 1 23 8 9l-3-13zm6 0C43 7 60 9 56 25c-2 9-10 14-20 10 8 15-1 23-8 9l3-13z"/><path d="M31 27h2v18h-2z"/></svg>
+    </span>
+    <span class="dreamworld-butterfly dreamworld-butterfly--two">
+      <svg viewBox="0 0 64 64"><path d="M29 30C21 7 4 9 8 25c2 9 10 14 20 10-8 15 1 23 8 9l-3-13zm6 0C43 7 60 9 56 25c-2 9-10 14-20 10 8 15-1 23-8 9l3-13z"/><path d="M31 27h2v18h-2z"/></svg>
+    </span>
+    <span class="dreamworld-sparkle dreamworld-sparkle--one">✧</span>
+    <span class="dreamworld-sparkle dreamworld-sparkle--two">✦</span>
+    <span class="dreamworld-sparkle dreamworld-sparkle--three">⋆</span>
+  </div>
   <a class="dreamworld-skip" href="#dreamworldDestinations">Skip to Dreamworld destinations</a>
 
   <header class="dreamworld-header">
@@ -83,12 +104,13 @@
         <section class="dreamworld-dialogue" id="dreamworldDialogue" aria-labelledby="dreamworldDialogueTitle" hidden>
           <button class="dreamworld-dialogue__close" id="dreamworldDialogueClose" type="button" aria-label="Close Pip's conversation">×</button>
           <h2 class="dreamworld-dialogue__title" id="dreamworldDialogueTitle">A little hello</h2>
-          <p class="dreamworld-dialogue__message" id="dreamworldDialogueMessage" aria-live="polite">Oh! You made it! 🌙 I’m Pip. I keep a little storybook diary of the adventures we share. Want to explore the Workshop together?</p>
+          <p class="dreamworld-dialogue__message" id="dreamworldDialogueMessage" aria-live="polite">Oh! You made it! 🌙 I’m Pip. Welcome to the Midnight Observatory! I keep a storybook diary of all the adventures we share. Where shall we dream together?</p>
           <div class="dreamworld-dialogue__choices" id="dreamworldDialogueChoices">
             <button type="button" data-dialogue-choice="tour">Show me around!</button>
             <button type="button" data-dialogue-choice="workshop">What can I find in Pip's Workshop?</button>
             <button type="button" data-dialogue-choice="dream">I have a dream!</button>
             <button type="button" data-dialogue-choice="secret">Tell me a secret…</button>
+            <button type="button" data-dialogue-choice="game">🎮 Play a game with me!</button>
           </div>
           <div class="dreamworld-dialogue__next" id="dreamworldDialogueNext" hidden></div>
           <button class="dreamworld-dialogue__replay" id="dreamworldDialogueReplay" type="button" hidden>Ask Pip again</button>

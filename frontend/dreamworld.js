@@ -160,6 +160,13 @@ const dialogueReplies = {
     action: null,
     secret: true,
   },
+  game: {
+    message: "Yay! Let's play Pip's Wishbound Adventure! ✨ Help me collect golden wish stars, hop across the clouds, and reach the destination of your wish!",
+    action: {
+      label: "Play Wishbound Adventure",
+      href: "dream-atlas.html#atlasAdventure"
+    },
+  },
 };
 
 function showDialogueChoice(choiceId) {
@@ -200,17 +207,15 @@ function showDialogueChoice(choiceId) {
       next.addEventListener('click', () => window.DearPipSounds?.play('portal-open'));
       dialogueNext.append(next);
     }
-    if (choiceId === 'tour') {
-      locationButtons.forEach((button) => button.classList.add('is-guided'));
-      window.setTimeout(() => {
-        locationButtons.forEach((button) => button.classList.remove('is-guided'));
-      }, 3200);
-    }
+
     dialogueNext.hidden = !reply.action && !reply.secret;
     dialogueReplay.hidden = false;
     if (choiceId === 'tour') {
       dialogueNext.hidden = false;
-      dialogueNext.textContent = 'I lit up every island on the map for you. Choose one to take a closer look!';
+      dialogueNext.textContent = 'I lit up every island on the map for you. Let’s take a little tour together!';
+      window.setTimeout(() => {
+        window.dispatchEvent(new Event('pip-tour:start'));
+      }, 180);
     }
   }, 420);
 }
@@ -223,7 +228,7 @@ dialogueChoices.addEventListener('click', (event) => {
 dialogueReplay.addEventListener('click', () => {
   window.clearTimeout(dialogueTimer);
   dialogue.classList.remove('is-typing');
-  dialogueMessage.textContent = 'Oh! You made it! 🌙 I’m Pip. I keep a little storybook diary of the adventures we share. Want to explore the Workshop together?';
+  dialogueMessage.textContent = 'Oh! You made it! 🌙 I’m Pip. Welcome to the Midnight Observatory! I keep a storybook diary of all the adventures we share. Where shall we dream together?';
   dialogueChoices.hidden = false;
   dialogueNext.hidden = true;
   dialogueNext.replaceChildren();
